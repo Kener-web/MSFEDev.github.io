@@ -1,0 +1,103 @@
+@page "/events/add"
+@page "/events/edit/{id:int}"
+@inject IEventService EventService
+@inject NavigationManager Navigation
+@using EventEase.Models
+@using EventEase.Services
+
+<PageTitle>@(isEditing ? "Edit Event" : "Add Event")</PageTitle>
+
+<h3>@(isEditing ? "Edit Event" : "Add New Event")</h3>
+
+@if (isSaving)
+{
+    <p>Saving...</p>
+}
+else if (currentEvent != null)
+{
+    <EditForm Model="currentEvent" OnValidSubmit="SaveEvent">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group mb-3">
+            <label for="name" class="form-label">Event Name:</label>
+            <InputText id="name" @bind-Value="currentEvent.Name" class="form-control" />
+            <ValidationMessage For="@(() => currentEvent.Name)" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="location" class="form-label">Location:</label>
+            <InputText id="location" @bind-Value="currentEvent.Location" class="form-control" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="date" class="form-label">Date:</label>
+            <InputDate id="date" @bind-Value="currentEvent.Date" class="form-control" />
+        </div>
+
+        <div class="form-group mb-3">
+            <label for="description" class="form-label">Description:</label>
+            <InputText id="description" @bind-Value="currentEvent.Description" class="form-control" />
+        </div>
+
+        <div>
+            <button type="submit" class="btn btn-success">@(isEditing ? "Update" : "Add") Event</button>
+            <button type="button" @onclick="Cancel" class="btn btn-secondary">Cancel</button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public int? Id { get; set; }
+
+    private Event currentEvent = new();
+    private bool isEditing = false;
+    private bool isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue)
+        {
+            isEditing = true;
+            var eventFromService = await EventService.GetEventByIdAsync(Id.Value);
+            if (eventFromService is null)
+            {
+                Navigation.NavigateTo("/not-found");
+                return;
+            }
+            currentEvent = eventFromService;
+        }
+        else
+        {
+            isEditing = false;
+            currentEvent = new Event { Date = DateTime.Today };
+        }
+    }
+
+    private async Task SaveEvent()
+    {
+        isSaving = true;
+        try
+        {
+            if (isEditing)
+            {
+                await EventService.UpdateEventAsync(currentEvent);
+            }
+            else
+            {
+                await EventService.AddEventAsync(currentEvent);
+            }
+            Navigation.NavigateTo("/events");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/events");
+    }
+}

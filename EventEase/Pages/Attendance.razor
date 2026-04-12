@@ -1,0 +1,335 @@
+@page "/attendance"
+@using EventEase.Models
+@using EventEase.Services
+@inject IAttendanceService AttendanceService
+@inject IEventService EventService
+@inject IUserService UserService
+@inject IUserSessionService SessionService
+@inject NavigationManager NavigationManager
+
+
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2 class="mb-3">Attendance Tracker</h2>
+            <div class="alert alert-info">
+                <strong>Current Session:</strong> 
+                @if (SessionService.IsLoggedIn && SessionService.CurrentUser != null)
+                {
+                    <span>@SessionService.CurrentUser.Name (@SessionService.CurrentUser.Email)</span>
+                }
+                else
+                {
+                    <span>No user logged in - <a href="/registration" class="alert-link">Register here</a></span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Events Applied to Current User -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📅 My Registered Events</h5>
+                </div>
+                <div class="card-body">
+                    @if (SessionService.CurrentUser == null)
+                    {
+                        <div class="alert alert-warning">
+                            Please <a href="/registration" class="alert-link">register or login</a> to view your registered events.
+                        </div>
+                    }
+                    else if (userAttendances.Count == 0)
+                    {
+                        <p class="text-muted">You haven't registered for any events yet. <a href="/events" class="link">Browse events</a></p>
+                    }
+                    else
+                    {
+                        <div class="list-group">
+                            @foreach (var attendance in userAttendances)
+                            {
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">@attendance.Event?.Name</h6>
+                                            <p class="mb-2 text-muted small">
+                                                <strong>Location:</strong> @attendance.Event?.Location
+                                            </p>
+                                            <p class="mb-2 text-muted small">
+                                                <strong>Date:</strong> @attendance.Event?.Date.ToString("dddd, MMMM dd, yyyy HH:mm")
+                                            </p>
+                                            <p class="mb-0 small">
+                                                <strong>Registered:</strong> @attendance.RegistrationDate.ToString("MMM dd, yyyy")
+                                                @if (attendance.Attended)
+                                                {
+                                                    <span class="badge bg-success">Attended ✓</span>
+                                                    <br />
+                                                    <small class="text-muted">Attendance marked: @attendance.AttendanceDate?.ToString("MMM dd, yyyy")</small>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">Pending</span>
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants in Events -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">👥 Event Participants</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="eventSelect" class="form-label">Select Event:</label>
+                        <select id="eventSelect" class="form-select" @onchange="HandleEventSelected">
+                            <option value="">-- Select an Event --</option>
+                            @foreach (var evt in allEvents)
+                            {
+                                <option value="@evt.Id">@evt.Name (@evt.Date.ToString("MMM dd, yyyy"))</option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (selectedEventId == 0)
+                    {
+                        <p class="text-muted">Select an event above to view participants.</p>
+                    }
+                    else if (eventAttendances.Count == 0)
+                    {
+                        <p class="text-muted">No participants registered for this event yet.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Participant Name</th>
+                                        <th>Email</th>
+                                        <th>Age</th>
+                                        <th>Registered</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var attendance in eventAttendances)
+                                    {
+                                        <tr>
+                                            <td>@attendance.User?.Name</td>
+                                            <td>@attendance.User?.Email</td>
+                                            <td>@attendance.User?.Age</td>
+                                            <td>@attendance.RegistrationDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                @if (attendance.Attended)
+                                                {
+                                                    <span class="badge bg-success">Attended ✓</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-warning">Pending</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="alert alert-secondary mt-3">
+                            <strong>Summary:</strong> 
+                            @eventAttendances.Count total registered | 
+                            @eventAttendances.Count(a => a.Attended) attended | 
+                            @eventAttendances.Count(a => !a.Attended) pending
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Registration Section -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">⚡ Quick Event Registration</h5>
+                </div>
+                <div class="card-body">
+                    @if (SessionService.CurrentUser == null)
+                    {
+                        <div class="alert alert-warning">
+                            Please <a href="/registration" class="alert-link">register or login</a> to register for events.
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="mb-3">Register for available events as <strong>@SessionService.CurrentUser.Name</strong>:</p>
+                        <div class="row">
+                            @if (availableEventsForRegistration.Count == 0)
+                            {
+                                <div class="col-md-12">
+                                    <p class="text-muted">You have registered for all available events or no events are available.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var evt in availableEventsForRegistration)
+                                {
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card border-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">@evt.Name</h6>
+                                                <p class="card-text small text-muted">
+                                                    @evt.Date.ToString("MMMM dd, yyyy") - @evt.Location
+                                                </p>
+                                                <button class="btn btn-sm btn-primary" @onclick="() => RegisterForEvent(evt.Id)">
+                                                    Register Now
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show position-fixed bottom-0 end-0 m-3" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+        </div>
+    }
+</div>
+
+@code {
+    private List<EventAttendance> userAttendances = new();
+    private List<EventAttendance> eventAttendances = new();
+    private List<Event> allEvents = new();
+    private List<Event> availableEventsForRegistration = new();
+    private int selectedEventId = 0;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAllEvents();
+        if (SessionService.CurrentUser != null)
+        {
+            await LoadUserAttendances();
+            await LoadAvailableEvents();
+        }
+    }
+
+    private async Task LoadAllEvents()
+    {
+        allEvents = await EventService.GetAllEventsAsync();
+    }
+
+    private async Task LoadUserAttendances()
+    {
+        if (SessionService.CurrentUser != null)
+        {
+            userAttendances = await AttendanceService.GetAttendancesByUserIdAsync(SessionService.CurrentUser.Id);
+            
+            // Load event details for each attendance
+            var allEvents = await EventService.GetAllEventsAsync();
+            foreach (var attendance in userAttendances)
+            {
+                attendance.Event = allEvents.FirstOrDefault(e => e.Id == attendance.EventId);
+            }
+        }
+    }
+
+    private async Task LoadAvailableEvents()
+    {
+        if (SessionService.CurrentUser != null)
+        {
+            var allEvents = await EventService.GetAllEventsAsync();
+            var registeredEventIds = userAttendances.Select(a => a.EventId).ToList();
+            availableEventsForRegistration = allEvents
+                .Where(e => !registeredEventIds.Contains(e.Id))
+                .ToList();
+        }
+    }
+
+    private async Task HandleEventSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int eventId) && eventId > 0)
+        {
+            selectedEventId = eventId;
+            eventAttendances = await AttendanceService.GetAttendancesByEventIdAsync(eventId);
+
+            // Load user details for attendances
+            var users = await UserService.GetAllUsersAsync();
+            foreach (var attendance in eventAttendances)
+            {
+                attendance.User = users.FirstOrDefault(u => u.Id == attendance.UserId);
+            }
+        }
+        else
+        {
+            selectedEventId = 0;
+            eventAttendances = new();
+        }
+    }
+
+    private async Task RegisterForEvent(int eventId)
+    {
+        if (SessionService.CurrentUser == null)
+        {
+            errorMessage = "Please register or login first.";
+            return;
+        }
+
+        try
+        {
+            var isAlreadyRegistered = await AttendanceService.IsUserRegisteredForEventAsync(
+                SessionService.CurrentUser.Id, eventId);
+
+            if (isAlreadyRegistered)
+            {
+                errorMessage = "You are already registered for this event.";
+                return;
+            }
+
+            var attendance = new EventAttendance
+            {
+                UserId = SessionService.CurrentUser.Id,
+                EventId = eventId
+            };
+
+            await AttendanceService.AddAttendanceAsync(attendance);
+            successMessage = "Successfully registered for the event!";
+
+            await LoadUserAttendances();
+            await LoadAvailableEvents();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to register: {ex.Message}";
+        }
+    }
+}

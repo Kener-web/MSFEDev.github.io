@@ -1,0 +1,201 @@
+@page "/events"
+@inject IEventService EventService
+@inject IUserSessionService SessionService
+@inject IAttendanceService AttendanceService
+@inject NavigationManager Navigation
+@using EventEase.Models
+@using EventEase.Services
+
+<PageTitle>Events</PageTitle>
+
+<div class="container-fluid mt-5">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>Events</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/events/add" class="btn btn-primary">
+                <span class="bi bi-plus-circle"></span> Add New Event
+            </a>
+        </div>
+    </div>
+
+    @if (SessionService.IsLoggedIn && SessionService.CurrentUser != null)
+    {
+        <div class="alert alert-info">
+            <strong>Logged in as:</strong> @SessionService.CurrentUser.Name (@SessionService.CurrentUser.Email)
+            <a href="/attendance" class="float-end btn btn-sm btn-info">View My Attendance</a>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            <strong>Not logged in</strong> - <a href="/registration" class="alert-link">Register here</a> to register for events
+        </div>
+    }
+
+    @if (isLoading)
+    {
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (events.Count == 0)
+    {
+        <div class="alert alert-info">No events found. <a href="/events/add" class="alert-link">Create a new event</a></div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var eventItem in events)
+            {
+                var isUserRegistered = SessionService.CurrentUser != null && 
+                    userRegistrations.Contains(eventItem.Id);
+                var participantCount = eventParticipants.ContainsKey(eventItem.Id) 
+                    ? eventParticipants[eventItem.Id] 
+                    : 0;
+
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">@eventItem.Name</h5>
+                            <p class="card-text text-muted">
+                                <small>
+                                    <strong>📍 Location:</strong> @eventItem.Location<br />
+                                    <strong>📅 Date:</strong> @eventItem.Date.ToString("dddd, MMMM dd, yyyy HH:mm")<br />
+                                    <strong>👥 Participants:</strong> @participantCount
+                                </small>
+                            </p>
+                            @if (!string.IsNullOrEmpty(eventItem.Description))
+                            {
+                                <p class="card-text small">@eventItem.Description</p>
+                            }
+                        </div>
+                        <div class="card-footer bg-white border-top">
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                @if (SessionService.IsLoggedIn && SessionService.CurrentUser != null)
+                                {
+                                    @if (isUserRegistered)
+                                    {
+                                        <span class="badge bg-success w-100">✓ Registered</span>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-outline-primary btn-sm" 
+                                                @onclick="() => RegisterForEvent(eventItem.Id)">
+                                            Register
+                                        </button>
+                                    }
+                                }
+                                <a href="/events/edit/@eventItem.Id" class="btn btn-outline-warning btn-sm">Edit</a>
+                                <button class="btn btn-outline-danger btn-sm" 
+                                        @onclick="() => DeleteEvent(eventItem.Id)">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show position-fixed bottom-0 end-0 m-3" role="alert">
+            @successMessage
+            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show position-fixed bottom-0 end-0 m-3" role="alert">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Event> events = new();
+    private List<int> userRegistrations = new();
+    private Dictionary<int, int> eventParticipants = new();
+    private bool isLoading;
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        isLoading = true;
+        events = await EventService.GetAllEventsAsync();
+
+        // Load user registrations and participant counts
+        if (SessionService.CurrentUser != null)
+        {
+            var userAttendances = await AttendanceService.GetAttendancesByUserIdAsync(SessionService.CurrentUser.Id);
+            userRegistrations = userAttendances.Select(a => a.EventId).ToList();
+        }
+
+        // Load participant counts for each event
+        foreach (var evt in events)
+        {
+            var attendances = await AttendanceService.GetAttendancesByEventIdAsync(evt.Id);
+            eventParticipants[evt.Id] = attendances.Count;
+        }
+
+        isLoading = false;
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        if (events.FirstOrDefault(e => e.Id == id) is Event evt)
+        {
+            await EventService.DeleteEventAsync(id);
+            events.RemoveAll(e => e.Id == id);
+            successMessage = $"Event '{evt.Name}' has been deleted.";
+        }
+    }
+
+    private async Task RegisterForEvent(int eventId)
+    {
+        if (SessionService.CurrentUser == null)
+        {
+            errorMessage = "Please log in to register for events.";
+            return;
+        }
+
+        try
+        {
+            var isAlreadyRegistered = await AttendanceService.IsUserRegisteredForEventAsync(
+                SessionService.CurrentUser.Id, eventId);
+
+            if (isAlreadyRegistered)
+            {
+                errorMessage = "You are already registered for this event.";
+                return;
+            }
+
+            var attendance = new Models.EventAttendance
+            {
+                UserId = SessionService.CurrentUser.Id,
+                EventId = eventId
+            };
+
+            await AttendanceService.AddAttendanceAsync(attendance);
+            await LoadEvents();
+            successMessage = "Successfully registered for the event!";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to register: {ex.Message}";
+        }
+    }
+}

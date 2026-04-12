@@ -1,0 +1,421 @@
+@page "/registration"
+@using EventEase.Models
+@using EventEase.Services
+@inject IUserService UserService
+@inject IUserSessionService SessionService
+@inject NavigationManager NavigationManager
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0">User Registration</h2>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <strong>Success!</strong> @successMessage
+                            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <strong>Error!</strong> @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                    <EditForm Model="newUser" OnValidSubmit="HandleRegistration">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <InputText id="name" class="form-control" @bind-Value="newUser.Name" 
+                                       placeholder="Enter your full name" />
+                            <ValidationMessage For="@(() => newUser.Name)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <InputText id="email" type="email" class="form-control" @bind-Value="newUser.Email" 
+                                       placeholder="Enter your email" />
+                            <ValidationMessage For="@(() => newUser.Email)" class="text-danger small" />
+                            @if (!string.IsNullOrEmpty(emailExistsError))
+                            {
+                                <div class="text-danger small">@emailExistsError</div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="birthdate" class="form-label">Birthdate <span class="text-danger">*</span></label>
+                            <InputDate id="birthdate" class="form-control" @bind-Value="newUser.Birthdate" />
+                            <ValidationMessage For="@(() => newUser.Birthdate)" class="text-danger small" />
+                            @if (birthdateError != null)
+                            {
+                                <div class="text-danger small">@birthdateError</div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-muted">
+                                <small>Age: <strong>@(newUser.Birthdate != default ? newUser.Age.ToString() : "N/A")</strong></small>
+                            </p>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-secondary" @onclick="ResetForm">Clear</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <span>Registering...</span>
+                                }
+                                else
+                                {
+                                    <span>Register</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Registered Users</h5>
+                </div>
+                <div class="card-body">
+                    @if (registeredUsers.Count == 0)
+                    {
+                        <p class="text-muted">No registered users yet.</p>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Age</th>
+                                        <th>Registration Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var user in registeredUsers)
+                                    {
+                                        <tr>
+                                            <td>@user.Id</td>
+                                            <td>@user.Name</td>
+                                            <td>@user.Email</td>
+                                            <td>@user.Age</td>
+                                            <td>@user.RegistrationDate.ToString("MMM dd, yyyy")</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <button class="btn btn-sm btn-success" @onclick="() => LoginAsUser(user)" title="Login as this user">
+                                                        Login As
+                                                    </button>
+                                                    <button class="btn btn-sm btn-warning" @onclick="() => OpenEditModal(user)" title="Edit user">
+                                                        Edit
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" @onclick="() => DeleteUser(user)" title="Delete user">
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+@if (editingUser != null)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="editingUser" OnValidSubmit="HandleUpdateUser">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label for="editName" class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <InputText id="editName" class="form-control" @bind-Value="editingUser.Name" />
+                            <ValidationMessage For="@(() => editingUser.Name)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <InputText id="editEmail" type="email" class="form-control" @bind-Value="editingUser.Email" />
+                            <ValidationMessage For="@(() => editingUser.Email)" class="text-danger small" />
+                            @if (!string.IsNullOrEmpty(editEmailExistsError))
+                            {
+                                <div class="text-danger small">@editEmailExistsError</div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editBirthdate" class="form-label">Birthdate <span class="text-danger">*</span></label>
+                            <InputDate id="editBirthdate" class="form-control" @bind-Value="editingUser.Birthdate" />
+                            <ValidationMessage For="@(() => editingUser.Birthdate)" class="text-danger small" />
+                            @if (!string.IsNullOrEmpty(editBirthdateError))
+                            {
+                                <div class="text-danger small">@editBirthdateError</div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <p class="text-muted">
+                                <small>Age: <strong>@editingUser.Age</strong></small>
+                            </p>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="button" class="btn btn-secondary" @onclick="CloseEditModal">Cancel</button>
+                            <button type="submit" class="btn btn-warning" disabled="@isUpdating">
+                                @if (isUpdating)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    <span>Updating...</span>
+                                }
+                                else
+                                {
+                                    <span>Update User</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private User newUser = new();
+    private User? editingUser;
+    private List<User> registeredUsers = new();
+    private string successMessage = string.Empty;
+    private string errorMessage = string.Empty;
+    private string emailExistsError = string.Empty;
+    private string? birthdateError;
+    private string editEmailExistsError = string.Empty;
+    private string editBirthdateError = string.Empty;
+    private bool isSubmitting = false;
+    private bool isUpdating = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRegisteredUsers();
+    }
+
+    private async Task HandleRegistration()
+    {
+        emailExistsError = string.Empty;
+        birthdateError = null;
+        errorMessage = string.Empty;
+
+        // Validate birthdate
+        if (newUser.Birthdate == default)
+        {
+            birthdateError = "Please select a valid birthdate.";
+            return;
+        }
+
+        if (newUser.Birthdate >= DateTime.Today)
+        {
+            birthdateError = "Birthdate must be in the past.";
+            return;
+        }
+
+        // Check if user is at least 13 years old
+        int age = DateTime.Today.Year - newUser.Birthdate.Year;
+        if (newUser.Birthdate.AddYears(age) > DateTime.Today)
+            age--;
+
+        if (age < 13)
+        {
+            birthdateError = "You must be at least 13 years old to register.";
+            return;
+        }
+
+        // Check if email already exists
+        var existingUser = await UserService.GetUserByEmailAsync(newUser.Email ?? "");
+        if (existingUser != null)
+        {
+            emailExistsError = "This email is already registered.";
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            await UserService.AddUserAsync(newUser);
+            await SessionService.LoginAsync(newUser);
+            
+            successMessage = $"Welcome {newUser.Name}! You have been successfully registered.";
+            ResetForm();
+            await LoadRegisteredUsers();
+
+            // Redirect to events page after 2 seconds
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/events");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during registration: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task LoadRegisteredUsers()
+    {
+        registeredUsers = await UserService.GetAllUsersAsync();
+    }
+
+    private void ResetForm()
+    {
+        newUser = new();
+        emailExistsError = string.Empty;
+        birthdateError = null;
+    }
+
+    private void OpenEditModal(User user)
+    {
+        editingUser = new User
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Email = user.Email,
+            Birthdate = user.Birthdate,
+            RegistrationDate = user.RegistrationDate
+        };
+        editEmailExistsError = string.Empty;
+        editBirthdateError = string.Empty;
+    }
+
+    private void CloseEditModal()
+    {
+        editingUser = null;
+        editEmailExistsError = string.Empty;
+        editBirthdateError = string.Empty;
+    }
+
+    private async Task HandleUpdateUser()
+    {
+        if (editingUser == null) return;
+
+        editEmailExistsError = string.Empty;
+        editBirthdateError = string.Empty;
+
+        // Validate birthdate
+        if (editingUser.Birthdate == default)
+        {
+            editBirthdateError = "Please select a valid birthdate.";
+            return;
+        }
+
+        if (editingUser.Birthdate >= DateTime.Today)
+        {
+            editBirthdateError = "Birthdate must be in the past.";
+            return;
+        }
+
+        // Check if user is at least 13 years old
+        int age = DateTime.Today.Year - editingUser.Birthdate.Year;
+        if (editingUser.Birthdate.AddYears(age) > DateTime.Today)
+            age--;
+
+        if (age < 13)
+        {
+            editBirthdateError = "You must be at least 13 years old to register.";
+            return;
+        }
+
+        // Check if email is being changed and is already in use by another user
+        var originalUser = registeredUsers.FirstOrDefault(u => u.Id == editingUser.Id);
+        if (originalUser?.Email != editingUser.Email)
+        {
+            var emailExists = await UserService.GetUserByEmailAsync(editingUser.Email ?? "");
+            if (emailExists != null)
+            {
+                editEmailExistsError = "This email is already registered by another user.";
+                return;
+            }
+        }
+
+        try
+        {
+            isUpdating = true;
+            await UserService.UpdateUserAsync(editingUser);
+            successMessage = $"User '{editingUser.Name}' has been updated successfully.";
+            CloseEditModal();
+            await LoadRegisteredUsers();
+            
+            // Update session if editing current user
+            if (SessionService.CurrentUser?.Id == editingUser.Id)
+            {
+                await SessionService.UpdateCurrentUserAsync(editingUser);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during update: {ex.Message}";
+        }
+        finally
+        {
+            isUpdating = false;
+        }
+    }
+
+    private async Task LoginAsUser(User user)
+    {
+        await SessionService.LoginAsync(user);
+        successMessage = $"Successfully logged in as {user.Name}!";
+        
+        // Redirect to events page after 1 second
+        await Task.Delay(1000);
+        NavigationManager.NavigateTo("/events");
+    }
+
+    private async Task DeleteUser(User user)
+    {
+        // Prevent deleting the currently logged in user
+        if (SessionService.CurrentUser?.Id == user.Id)
+        {
+            errorMessage = "Cannot delete the currently logged in user. Please login as another user first.";
+            return;
+        }
+
+        try
+        {
+            await UserService.DeleteUserAsync(user.Id);
+            successMessage = $"User '{user.Name}' has been deleted successfully.";
+            await LoadRegisteredUsers();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while deleting the user: {ex.Message}";
+        }
+    }
+}

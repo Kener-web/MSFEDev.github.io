@@ -1,0 +1,1 @@
+c:\Projects\MicrosoftFrontEndDevelopment\Course04_Project\EventEase\bin\Release\net9.0\publish\web.config

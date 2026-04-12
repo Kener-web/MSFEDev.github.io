@@ -1,0 +1,72 @@
+﻿@page "/"
+@inject IEventService EventService
+@inject NavigationManager Navigation
+@using EventEase.Models
+@using EventEase.Services
+
+<PageTitle>Events</PageTitle>
+
+<h3>Events</h3>
+
+@if (events == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div class="mb-3">
+        <a href="/events/add" class="btn btn-primary">Add New Event</a>
+    </div>
+
+    @if (events.Count == 0)
+    {
+        <p>No events found.</p>
+    }
+    else
+    {
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Location</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var eventItem in events)
+                {
+                    <tr>
+                        <td>@eventItem.Name</td>
+                        <td>@eventItem.Location</td>
+                        <td>@eventItem.Date.ToShortDateString()</td>
+                        <td>
+                            <a href="/events/edit/@eventItem.Id" class="btn btn-warning btn-sm">Edit</a>
+                            <button @onclick="() => DeleteEvent(eventItem.Id)" class="btn btn-danger btn-sm">Delete</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<Event> events = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEvents();
+    }
+
+    private async Task LoadEvents()
+    {
+        events = await EventService.GetAllEventsAsync();
+    }
+
+    private async Task DeleteEvent(int id)
+    {
+        await EventService.DeleteEventAsync(id);
+        await LoadEvents();
+    }
+}
