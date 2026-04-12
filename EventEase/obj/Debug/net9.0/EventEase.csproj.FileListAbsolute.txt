@@ -1281,6 +1281,9 @@ C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\n
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_CJK.tjcz0u77k5.dat
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_EFIGS.tptq2av103.dat
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_no_CJK.lfu7j35m59.dat
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.ylvwi4hl9m.wasm
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.yg70jehup8.pdb
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\blazor.boot.json
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\blazor.webassembly.js.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\Microsoft.AspNetCore.Authorization.is84zt9n9u.wasm.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\Microsoft.AspNetCore.Components.3zig3jhz80.wasm.gz
@@ -1482,11 +1485,8 @@ C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\n
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_CJK.tjcz0u77k5.dat.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_EFIGS.tptq2av103.dat.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\icudt_no_CJK.lfu7j35m59.dat.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.9d4m2ajfuu.wasm
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.1c3m3gszcd.pdb
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\blazor.boot.json
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.9d4m2ajfuu.wasm.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.1c3m3gszcd.pdb.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.ylvwi4hl9m.wasm.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\EventEase.yg70jehup8.pdb.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\wwwroot\_framework\blazor.boot.json.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\EventEase.staticwebassets.runtime.json
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\bin\Debug\net9.0\EventEase.staticwebassets.endpoints.json
@@ -1902,7 +1902,7 @@ C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\n
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\blazor.build.boot-extension.json
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\blazor.boot.json
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\ox6amlsufo-8rbvw3on5j.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\nmq3sht62t-cndtd01vrk.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\nmq3sht62t-eufjv7y5nj.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\z1ekdz4m32-bqjiyaj88i.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\qfgw8hoc2o-c2jlpeoesf.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\vi7czabjyp-erw9l3u2r3.gz
@@ -2151,9 +2151,9 @@ C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\n
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\75trfcm43w-tjcz0u77k5.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\lfiq0gid4h-tptq2av103.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\y62acmnqwm-lfu7j35m59.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\gqx5ofl3a7-9d4m2ajfuu.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\lw84d9mf51-1c3m3gszcd.gz
-C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\pqrel3z3dc-qxg7jm3ht6.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\gqx5ofl3a7-ylvwi4hl9m.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\lw84d9mf51-yg70jehup8.gz
+C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\compressed\pqrel3z3dc-nghobmig5t.gz
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\staticwebassets.build.json
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\staticwebassets.build.json.cache
 C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\obj\Debug\net9.0\staticwebassets.development.json
