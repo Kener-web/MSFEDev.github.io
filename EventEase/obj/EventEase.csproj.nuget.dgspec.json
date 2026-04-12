@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\Projects\\MicrosoftFrontEndDevelopment\\Course04_Project\\EventEase\\EventEase.csproj": {}
+    "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj": {}
   },
   "projects": {
-    "c:\\Projects\\MicrosoftFrontEndDevelopment\\Course04_Project\\EventEase\\EventEase.csproj": {
+    "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\Projects\\MicrosoftFrontEndDevelopment\\Course04_Project\\EventEase\\EventEase.csproj",
+        "projectUniqueName": "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj",
         "projectName": "EventEase",
-        "projectPath": "c:\\Projects\\MicrosoftFrontEndDevelopment\\Course04_Project\\EventEase\\EventEase.csproj",
+        "projectPath": "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj",
         "packagesPath": "C:\\Users\\Kener\\.nuget\\packages\\",
-        "outputPath": "c:\\Projects\\MicrosoftFrontEndDevelopment\\Course04_Project\\EventEase\\obj\\",
+        "outputPath": "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

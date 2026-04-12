@@ -13,73 +13,73 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = browser
 build_property.RootNamespace = EventEase
 build_property.RootNamespace = EventEase
-build_property.ProjectDir = C:\Projects\MicrosoftFrontEndDevelopment\Course04_Project\EventEase\
+build_property.ProjectDir = C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = false
 build_property.RazorLangVersion = 9.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = C:\Projects\MicrosoftFrontEndDevelopment\Course04_Project\EventEase
+build_property.MSBuildProjectDirectory = C:\Projects\MicrosoftFrontEndDevelopment\MSFEDev.github.io\EventEase
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 9.0
 build_property.EnableCodeStyleSeverity = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/App.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/App.razor]
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Activity1.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Activity1.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWN0aXZpdHkxLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Activity2.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Activity2.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWN0aXZpdHkyLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Activity3.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Activity3.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQWN0aXZpdHkzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Attendance.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Attendance.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQXR0ZW5kYW5jZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Counter.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Counter.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/EventForm.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/EventForm.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXZlbnRGb3JtLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Events.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Events.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcRXZlbnRzLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Home.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/NotFound.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/NotFound.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTm90Rm91bmQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Registration.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Registration.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUmVnaXN0cmF0aW9uLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Pages/Weather.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Pages/Weather.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXNcV2VhdGhlci5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/_Imports.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Layout/MainLayout.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE1haW5MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-smm5jfccoq
 
-[C:/Projects/MicrosoftFrontEndDevelopment/Course04_Project/EventEase/Layout/NavMenu.razor]
+[C:/Projects/MicrosoftFrontEndDevelopment/MSFEDev.github.io/EventEase/Layout/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-9quvq08be2
