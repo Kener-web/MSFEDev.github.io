@@ -45,14 +45,14 @@ jobs:
         - name: Setup Pages
           uses: actions/configure-pages@v4
 
+        - name: Disable Jekyll
+          run: touch docs/wwwroot/.nojekyll
+
         - name: Upload
           uses: actions/upload-pages-artifact@v4
           with:
             path: 'docs/wwwroot'
 
-        - name: Disable Jekyll
-          run: touch docs/wwwroot/.nojekyll
-            
         - name: Deploy
           id: deployment
           uses: actions/deploy-pages@v4
