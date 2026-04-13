@@ -50,6 +50,9 @@ jobs:
           with:
             path: 'docs/wwwroot'
 
+        - name: Disable Jekyll
+          run: touch docs/wwwroot/.nojekyll
+            
         - name: Deploy
           id: deployment
           uses: actions/deploy-pages@v4

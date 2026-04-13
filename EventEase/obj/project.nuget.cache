@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "2SMfvZQFEe0=",
+  "dgSpecHash": "eYwICsXTM8w=",
   "success": true,
-  "projectFilePath": "c:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj",
+  "projectFilePath": "C:\\Projects\\MicrosoftFrontEndDevelopment\\MSFEDev.github.io\\EventEase\\EventEase.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Kener\\.nuget\\packages\\microsoft.aspnetcore.authorization\\9.0.11\\microsoft.aspnetcore.authorization.9.0.11.nupkg.sha512",
     "C:\\Users\\Kener\\.nuget\\packages\\microsoft.aspnetcore.components\\9.0.11\\microsoft.aspnetcore.components.9.0.11.nupkg.sha512",
