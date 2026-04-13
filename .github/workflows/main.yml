@@ -46,7 +46,9 @@ jobs:
           uses: actions/configure-pages@v4
 
         - name: Upload
-          uses: actions/upload-pages-artifact@v3
+          uses: actions/upload-pages-artifact@v4
+          with:
+            path: docs
 
         - name: Deploy
           id: deployment
