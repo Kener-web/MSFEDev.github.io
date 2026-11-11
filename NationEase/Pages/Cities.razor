@@ -1,0 +1,47 @@
+@page "/cities"
+
+@using NationEase.Models
+@using NationEase.Data
+@using NationEase.Services
+
+@inject NationBuilderService Builder
+
+<h3>Cities</h3>
+
+@foreach(var city in cities)
+{
+    <tr>
+        <td>
+            <button class="btn btn-primary"
+                    @onclick="() => AddCity(city)">
+                Add
+            </button>
+        </td>
+        <td>[@city.State?.Acronym]</td>
+        <td>@city.Name</td>
+        <td>@city.Population.ToString("N0")</td>
+    </tr>
+}
+
+@code
+{
+    private List<State> states = new();
+    private List<City> cities = new();
+
+    private void AddCity(City city)
+    {
+        Builder.NationBuilder.AddCity(city);
+    }
+
+    protected override void OnInitialized()
+    {
+        states = StateRepository.GetStates();
+        cities = CityRepository.GetCities();
+
+        foreach(var city in cities)
+        {
+            city.State = states
+                .FirstOrDefault(s => s.StateId == city.StateId);
+        }
+    }
+}

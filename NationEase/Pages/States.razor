@@ -1,0 +1,44 @@
+@page "/states"
+
+@using NationEase.Models
+@using NationEase.Data
+
+<h3>US States</h3>
+
+<table class="table table-striped">
+
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Date</th>
+            <th>Acronym</th>
+            <th>State</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    @foreach (var state in states)
+    {
+        <tr>
+            <td>@state.StateId</td>
+            <td>@state.Date</td>
+            <td>@state.Acronym</td>
+            <td>@state.Name</td>
+        </tr>
+    }
+
+    </tbody>
+
+</table>
+
+@code {
+
+    private List<State> states = new();
+
+    protected override void OnInitialized()
+    {
+        states = StateRepository.GetStates();
+    }
+
+}
