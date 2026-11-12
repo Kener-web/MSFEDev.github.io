@@ -5,9 +5,9 @@ namespace NationEase.Models;
 public class NationBuilder
 {
     public int CityCount => Cities.Count;
-    public decimal AveragePopulation => Cities.Any() ? Cities.Average(c => c.Population) : 0m;
-    public City? LargestCity => Cities.OrderByDescending(c => c.Population).FirstOrDefault();
-    public City? SmallestCity => Cities.OrderBy(c => c.Population).FirstOrDefault();
+    public decimal AveragePopulation => CityCount == 0 ? 0m : Cities.Average(c => c.Population);
+    public City? LargestCity => Cities.MaxBy(c => c.Population);
+    public City? SmallestCity => Cities.MinBy(c => c.Population);
     public ObservableCollection<City> Cities { get; set; } = new();
 
     public decimal TotalPopulation =>

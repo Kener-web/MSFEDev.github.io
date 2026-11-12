@@ -1,0 +1,41 @@
+@using NationEase.Models
+
+<table class="table">
+    <thead>
+        <tr>
+            <th></th>
+            <th>City</th>
+            <th>Population</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var city in Cities)
+        {
+            var isAdded = SelectedCityIds.Contains(city.CityId);
+
+            <tr>
+                <td>
+                    <button class="btn btn-primary"
+                            disabled="@isAdded"
+                            @onclick="() => OnAddCity.InvokeAsync(city)">
+                        @(isAdded ? "Added" : "Add to Nation")
+                    </button>
+                </td>
+                <td>[@city.State?.Acronym] @city.Name</td>
+                <td>@city.Population.ToString("N0")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code
+{
+    [Parameter, EditorRequired]
+    public IReadOnlyList<City> Cities { get; set; } = Array.Empty<City>();
+
+    [Parameter]
+    public IReadOnlySet<int> SelectedCityIds { get; set; } = new HashSet<int>();
+
+    [Parameter, EditorRequired]
+    public EventCallback<City> OnAddCity { get; set; }
+}
