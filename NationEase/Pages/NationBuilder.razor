@@ -3,6 +3,7 @@
 @using NationEase.Services
 
 @inject NationBuilderService Builder
+@inject IJSRuntime JS
 
 <h3>Nation Builder</h3>
 
@@ -34,9 +35,9 @@
     <thead>
 
         <tr>
+            <th></th>
             <th>City</th>
             <th>Population</th>
-            <th></th>
         </tr>
 
     </thead>
@@ -45,9 +46,10 @@
 
         @foreach(var city in Builder.NationBuilder.Cities.OrderByDescending(c => c.Population))
         {
-            <tr>
+            <tr data-city-id="@city.CityId">
                 <td>
-                    <button class="btn btn-danger"
+                    <button type="button"
+                            class="btn btn-danger"
                             @onclick="() => RemoveCity(city.CityId)">
                         Remove
                     </button>
@@ -64,21 +66,55 @@
     </tbody>
 
 </table>
-<button class="btn btn-warning"
+<button type="button"
+        class="btn btn-warning"
         @onclick="ClearNation">
     Clear Nation
 </button>
 
 
 @code {
+    private int? cityIdToFocus;
+    private bool focusAfterRemove;
 
     private void RemoveCity(int cityId)
     {
+        var cities = Builder.NationBuilder.Cities
+            .OrderByDescending(city => city.Population)
+            .ToList();
+        var removedCityIndex = cities.FindIndex(city => city.CityId == cityId);
+        cityIdToFocus = removedCityIndex > 0
+            ? cities[removedCityIndex - 1].CityId
+            : removedCityIndex >= 0 && removedCityIndex + 1 < cities.Count
+                ? cities[removedCityIndex + 1].CityId
+                : null;
+
         Builder.NationBuilder.RemoveCity(cityId);
+        focusAfterRemove = true;
     }
 
     private void ClearNation()
     {
         Builder.NationBuilder.Clear();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!focusAfterRemove)
+        {
+            return;
+        }
+
+        focusAfterRemove = false;
+        if (cityIdToFocus is int cityId)
+        {
+            await JS.InvokeVoidAsync("nationEaseKeyboard.focusNationBuilderAction", cityId);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("nationEaseKeyboard.focusClearNationButton");
+        }
+
+        cityIdToFocus = null;
     }
 }

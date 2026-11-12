@@ -1,16 +1,26 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">NationEase</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+        <button type="button"
+                class="navbar-toggler"
+                aria-label="Toggle navigation menu"
+                aria-controls="primary-navigation"
+                aria-expanded="@(!collapseNavMenu)"
+                @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
+<div id="primary-navigation" class="@NavMenuCssClass nav-scrollable">
+    <nav class="nav flex-column"
+         aria-label="Primary navigation"
+         aria-describedby="navigation-keyboard-help">
+        <span id="navigation-keyboard-help" class="visually-hidden">
+            Use the Up and Down arrow keys to move through navigation, and Right to enter page controls. On the page, use all four arrow keys to move between controls. Use Left at the edge of the controls to return to the current navigation link. Press Enter or Space to activate buttons.
+        </span>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseNavMenu">
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
@@ -27,13 +37,13 @@
         </div>
 -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="cities">
-                <span class="bi bi-building"></span> Cities
+            <NavLink class="nav-link" href="citycard" @onclick="CloseNavMenu">
+                <span class="bi bi-building" aria-hidden="true"></span> Cities
             </NavLink>
         </div>
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="nation-builder">
-                Nation Builder
+            <NavLink class="nav-link" href="nation-builder" @onclick="CloseNavMenu">
+                <span class="bi bi-building" aria-hidden="true"></span> Nation Builder
             </NavLink>
         </div>
     </nav>
@@ -47,5 +57,10 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void CloseNavMenu()
+    {
+        collapseNavMenu = true;
     }
 }
