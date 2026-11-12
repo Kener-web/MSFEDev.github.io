@@ -1,0 +1,41 @@
+@page "/citycard"
+
+@using NationEase.Data
+@using NationEase.Models
+@using NationEase.Services
+
+@inject NationBuilderService Builder
+
+<h3>Cities</h3>
+
+<CityCard Cities="cities"
+          SelectedCityIds="selectedCityIds"
+          OnAddCity="AddCity" />
+
+@code
+{
+    private List<State> states = new();
+    private List<City> cities = new();
+    private HashSet<int> selectedCityIds = new();
+
+    protected override void OnInitialized()
+    {
+        states = StateRepository.GetStates();
+        cities = CityRepository.GetCities();
+        selectedCityIds = Builder.NationBuilder.Cities
+            .Select(city => city.CityId)
+            .ToHashSet();
+
+        foreach (var city in cities)
+        {
+            city.State = states.FirstOrDefault(state => state.StateId == city.StateId);
+        }
+    }
+
+    private Task AddCity(City city)
+    {
+        Builder.NationBuilder.AddCity(city);
+        selectedCityIds.Add(city.CityId);
+        return Task.CompletedTask;
+    }
+}

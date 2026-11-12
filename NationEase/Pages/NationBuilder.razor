@@ -1,0 +1,84 @@
+@page "/nation-builder"
+
+@using NationEase.Services
+
+@inject NationBuilderService Builder
+
+<h3>Nation Builder</h3>
+
+<p>
+    Cities Selected:
+    @Builder.NationBuilder.Cities.Count
+</p>
+<p>
+    Total Population:
+    @Builder.NationBuilder.TotalPopulation.ToString("N0")
+</p>
+<p>
+    Average Population:
+    @Builder.NationBuilder.AveragePopulation.ToString("N0")
+</p>
+<p>
+    Largest City:
+    @Builder.NationBuilder.LargestCity?.Name
+</p>
+<p>
+    Smallest City:
+    @Builder.NationBuilder.SmallestCity?.Name
+</p>
+
+
+
+<table class="table">
+
+    <thead>
+
+        <tr>
+            <th>City</th>
+            <th>Population</th>
+            <th></th>
+        </tr>
+
+    </thead>
+
+    <tbody>
+
+        @foreach(var city in Builder.NationBuilder.Cities.OrderByDescending(c => c.Population))
+        {
+            <tr>
+                <td>
+                    <button class="btn btn-danger"
+                            @onclick="() => RemoveCity(city.CityId)">
+                        Remove
+                    </button>
+                </td>
+                <td>
+                    [@city.State?.Acronym]
+                    @city.Name
+                </td>
+
+                <td>@city.Population.ToString("N0")</td>
+            </tr>
+        }
+
+    </tbody>
+
+</table>
+<button class="btn btn-warning"
+        @onclick="ClearNation">
+    Clear Nation
+</button>
+
+
+@code {
+
+    private void RemoveCity(int cityId)
+    {
+        Builder.NationBuilder.RemoveCity(cityId);
+    }
+
+    private void ClearNation()
+    {
+        Builder.NationBuilder.Clear();
+    }
+}
