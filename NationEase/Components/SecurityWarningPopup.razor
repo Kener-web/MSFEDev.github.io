@@ -1,0 +1,26 @@
+@namespace NationEase.Components
+
+@if (!string.IsNullOrWhiteSpace(Message))
+{
+    <div class="security-warning-backdrop">
+        <section class="security-warning-popup"
+                 role="alertdialog"
+                 aria-modal="true"
+                 aria-labelledby="security-warning-title"
+                 aria-describedby="security-warning-message">
+            <h2 id="security-warning-title">Input blocked</h2>
+            <p id="security-warning-message">@Message</p>
+            <button type="button" class="btn btn-primary" autofocus @onclick="OnDismiss">
+                Close
+            </button>
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    [Parameter]
+    public EventCallback OnDismiss { get; set; }
+}

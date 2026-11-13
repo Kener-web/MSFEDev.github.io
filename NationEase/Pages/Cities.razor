@@ -1,47 +1,272 @@
 @page "/cities"
+@using System.ComponentModel.DataAnnotations
+@inject LocalNationService Nation
+@inject LocalAuthenticationService Authentication
+@inject IJSRuntime JS
 
-@using NationEase.Models
-@using NationEase.Data
-@using NationEase.Services
+<PageTitle>Cities - NationBuilder</PageTitle>
 
-@inject NationBuilderService Builder
+<h1>Cities</h1>
 
-<h3>Cities</h3>
+<EditForm Model="cityForm" OnValidSubmit="SaveCity" class="row g-2 mb-4">
+    <DataAnnotationsValidator />
+    <div class="col-md-2">
+        <label for="city-founded" class="form-label">Founding date</label>
+        <InputDate id="city-founded" class="form-control" @bind-Value="cityForm.FoundingDate" />
+    </div>
+    <div class="col-md-3">
+        <label for="city-state" class="form-label">State</label>
+        <InputSelect id="city-state" class="form-select" @bind-Value="cityForm.StateId">
+            <option value="0" disabled>Select State</option>
+            @foreach (var state in states.OrderBy(state => state.Acronym, StringComparer.OrdinalIgnoreCase))
+            {
+                <option value="@state.StateId">[@state.Acronym] @state.Name</option>
+            }
+        </InputSelect>
+    </div>
+    <div class="col-md-3">
+        <label for="city-name" class="form-label">City</label>
+        <InputText id="city-name" class="form-control" @bind-Value="cityForm.Name" @oninput="CheckInput" />
+    </div>
+    <div class="col-md-2">
+        <label for="city-population" class="form-label">Population</label>
+        <InputNumber id="city-population" class="form-control" @bind-Value="cityForm.Population" />
+    </div>
+    <div class="col-md-2 d-flex flex-wrap align-items-end gap-2">
+        <button type="submit" class="btn btn-primary">@(editingCityId is null ? "Add City" : "Save changes")</button>
+        @if (editingCityId is not null)
+        {
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
 
-@foreach(var city in cities)
+<SecurityWarningPopup Message="@inputSecurityWarning" OnDismiss="DismissInputWarning" />
+
+@if (!string.IsNullOrWhiteSpace(operationError))
 {
-    <tr>
-        <td>
-            <button class="btn btn-primary"
-                    @onclick="() => AddCity(city)">
-                Add
-            </button>
-        </td>
-        <td>[@city.State?.Acronym]</td>
-        <td>@city.Name</td>
-        <td>@city.Population.ToString("N0")</td>
-    </tr>
+    <div class="alert alert-danger" role="alert">@operationError</div>
 }
+
+<div class="table-responsive" role="region" aria-label="Cities list" tabindex="0">
+    <table class="table">
+    <thead>
+        <tr>
+            <th scope="col"><span class="visually-hidden">Nation selection</span></th>
+            <th scope="col">Actions</th>
+            <th scope="col">Founded</th>
+            <th scope="col">City</th>
+            <th scope="col">Population</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var city in cities.OrderBy(city => city.Population))
+        {
+            var isAdded = selectedCityIds.Contains(city.CityId);
+
+            <tr data-city-id="@city.CityId">
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditCity(city)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCity(city.CityId)">Delete</button>
+                </td>
+                <td>
+                    <button type="button"
+                            class="btn btn-primary"
+                            aria-disabled="@isAdded"
+                            aria-label="@(isAdded ? $"Added {city.Name} to Nation" : $"Add {city.Name} to Nation")"
+                            @onclick="() => AddCity(city)">
+                        @(isAdded ? "Added" : "Add to Nation")
+                    </button>
+                </td>
+                <td>@(city.FoundingDate?.ToString("yyyy/MM/dd") ?? "Unknown")</td>
+                <td>[@city.StateAcronym] @city.Name</td>
+                <td>@city.Population.ToString("N0")</td>
+            </tr>
+        }
+    </tbody>
+    </table>
+</div>
 
 @code
 {
-    private List<State> states = new();
-    private List<City> cities = new();
+    private List<StateResponse> states = new();
+    private List<CityResponse> cities = new();
+    private HashSet<int> selectedCityIds = new();
+    private CityFormModel cityForm = new();
+    private int? editingCityId;
+    private int? cityIdToFocus;
+    private string? operationError;
+    private string? inputSecurityWarning;
+    private bool inputSecurityWarningDismissed;
 
-    private void AddCity(City city)
+    protected override async Task OnInitializedAsync()
     {
-        Builder.NationBuilder.AddCity(city);
+        await LoadData();
     }
 
-    protected override void OnInitialized()
+    private async Task LoadData()
     {
-        states = StateRepository.GetStates();
-        cities = CityRepository.GetCities();
+        var userId = Authentication.CurrentUser!.UserId;
+        states = await Nation.GetStatesAsync(userId);
+        cities = await Nation.GetCitiesAsync(userId);
+        selectedCityIds = (await Nation.GetCartAsync(userId)).Select(city => city.CityId).ToHashSet();
+    }
 
-        foreach(var city in cities)
+    private async Task SaveCity()
+    {
+        if (!ValidateInputSafety())
         {
-            city.State = states
-                .FirstOrDefault(s => s.StateId == city.StateId);
+            return;
         }
+
+        operationError = null;
+        try
+        {
+            if (editingCityId is int id)
+            {
+                await Nation.UpdateCityAsync(Authentication.CurrentUser!.UserId, id, new UpdateCityRequest
+                {
+                    StateId = cityForm.StateId,
+                    Name = cityForm.Name,
+                    Population = cityForm.Population,
+                    FoundingDate = cityForm.FoundingDate
+                });
+            }
+            else
+            {
+                await Nation.CreateCityAsync(Authentication.CurrentUser!.UserId, new CreateCityRequest
+                {
+                    StateId = cityForm.StateId,
+                    Name = cityForm.Name,
+                    Population = cityForm.Population,
+                    FoundingDate = cityForm.FoundingDate
+                });
+            }
+
+            CancelEdit();
+            await LoadData();
+        }
+        catch (InvalidOperationException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The city could not be saved: {exception.Message}";
+        }
+    }
+
+    private async Task AddCity(CityResponse city)
+    {
+        if (selectedCityIds.Contains(city.CityId))
+        {
+            return;
+        }
+
+        operationError = null;
+        try
+        {
+            await Nation.AddToCartAsync(Authentication.CurrentUser!.UserId, city.CityId);
+            selectedCityIds.Add(city.CityId);
+            cityIdToFocus = city.CityId;
+        }
+        catch (KeyNotFoundException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The city could not be added to your cart: {exception.Message}";
+        }
+    }
+
+    private void EditCity(CityResponse city)
+    {
+        editingCityId = city.CityId;
+        cityForm = new CityFormModel
+        {
+            StateId = city.StateId,
+            Name = city.Name,
+            Population = city.Population,
+            FoundingDate = city.FoundingDate
+        };
+        operationError = null;
+    }
+
+    private async Task DeleteCity(int cityId)
+    {
+        operationError = null;
+        try
+        {
+            await Nation.DeleteCityAsync(Authentication.CurrentUser!.UserId, cityId);
+            await LoadData();
+        }
+        catch (KeyNotFoundException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The city could not be deleted: {exception.Message}";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingCityId = null;
+        cityForm = new CityFormModel();
+    }
+
+    private void CheckInput(ChangeEventArgs args)
+    {
+        var warning = InputSecurityGuard.GetWarning(args.Value?.ToString());
+        if (warning is null)
+        {
+            inputSecurityWarning = null;
+            inputSecurityWarningDismissed = false;
+        }
+        else if (!inputSecurityWarningDismissed)
+        {
+            inputSecurityWarning = warning;
+        }
+    }
+
+    private bool ValidateInputSafety()
+    {
+        inputSecurityWarning = InputSecurityGuard.GetWarning(cityForm.Name);
+        inputSecurityWarningDismissed = false;
+        return inputSecurityWarning is null;
+    }
+
+    private void DismissInputWarning()
+    {
+        inputSecurityWarning = null;
+        inputSecurityWarningDismissed = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (cityIdToFocus is not int cityId)
+        {
+            return;
+        }
+
+        cityIdToFocus = null;
+        await JS.InvokeVoidAsync("nationEaseKeyboard.focusCityAction", cityId);
+    }
+
+    private sealed class CityFormModel
+    {
+        [Required, StringLength(150)]
+        public string Name { get; set; } = string.Empty;
+
+        [Range(1, int.MaxValue, ErrorMessage = "Select a state.")]
+        public int StateId { get; set; }
+
+        [Range(0, long.MaxValue)]
+        public decimal Population { get; set; }
+
+        public DateOnly? FoundingDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
     }
 }

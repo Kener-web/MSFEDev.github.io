@@ -1,12 +1,51 @@
-﻿<Router AppAssembly="@typeof(App).Assembly">
-    <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
-        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
-    </Found>
-    <NotFound>
-        <PageTitle>Not found</PageTitle>
-        <LayoutView Layout="@typeof(MainLayout)">
-            <p role="alert">Sorry, there's nothing at this address.</p>
-        </LayoutView>
-    </NotFound>
-</Router>
+﻿@using NationEase.Pages
+@inject NationEase.Services.LocalAuthenticationService Authentication
+
+@if (!string.IsNullOrEmpty(initializationError))
+{
+    <div class="alert alert-danger m-4" role="alert">
+        <h1>Browser storage unavailable</h1>
+        <p>NationBuilder could not open its local SQLite database. Use a modern browser with OPFS support on HTTPS or localhost.</p>
+        <p>@initializationError</p>
+    </div>
+}
+else if (initialized)
+{
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            @if (Authentication.IsAuthenticated || routeData.PageType == typeof(Login))
+            {
+                <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+                <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+            }
+            else
+            {
+                <RedirectToLogin />
+            }
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <p role="alert">Sorry, there's nothing at this address.</p>
+            </LayoutView>
+        </NotFound>
+    </Router>
+}
+
+@code {
+    private bool initialized;
+    private string? initializationError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Authentication.InitializeAsync();
+            initialized = true;
+        }
+        catch (JSException exception)
+        {
+            initializationError = exception.Message;
+        }
+    }
+}

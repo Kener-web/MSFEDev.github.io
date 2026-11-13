@@ -1,0 +1,154 @@
+@page "/login"
+@using System.ComponentModel.DataAnnotations
+@inject LocalAuthenticationService Authentication
+@inject NavigationManager Navigation
+
+<PageTitle>Login - NationBuilder</PageTitle>
+
+<section class="login-panel" aria-labelledby="login-title">
+    <div class="alert alert-warning login-warning" role="note">
+        Learning app: accounts and data are stored only in this browser using SQLite WASM + OPFS. Do not enter sensitive information.
+        Browser data can be cleared or lost, and these accounts are not secure or shared across devices.
+    </div>
+
+    <div class="login-card">
+        <div class="login-heading">
+            <span class="login-eyebrow">NationBuilder</span>
+            <h1 id="login-title">@(isRegistering ? "Create your account" : "Welcome back")</h1>
+            <p>@(isRegistering ? "Set up an account to manage your own states and cities." : "Sign in to continue to your local workspace.")</p>
+        </div>
+
+        <EditForm Model="loginForm" OnValidSubmit="SignIn">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <InputText id="email"
+                           class="form-control"
+                           type="email"
+                           autocomplete="username"
+                           placeholder="you@example.com"
+                           @bind-Value="loginForm.Email"
+                           @oninput="CheckInput" />
+                <ValidationMessage For="@(() => loginForm.Email)" />
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <InputText id="password"
+                           type="password"
+                           class="form-control"
+                           autocomplete="@(isRegistering ? "new-password" : "current-password")"
+                           placeholder="Enter your password"
+                           @bind-Value="loginForm.Password" />
+                <ValidationMessage For="@(() => loginForm.Password)" />
+            </div>
+            @if (showInvalidCredentials)
+            {
+                <div class="alert alert-danger" role="alert">@errorMessage</div>
+            }
+            <button type="submit" class="btn btn-primary login-submit">
+                @(isRegistering ? "Create account" : "Log in")
+            </button>
+        </EditForm>
+
+        <SecurityWarningPopup Message="@inputSecurityWarning" OnDismiss="DismissInputWarning" />
+
+        @if (isRegistering)
+        {
+            <p class="login-password-hint">
+                Use at least 12 characters with uppercase, lowercase, a digit, and a symbol.
+            </p>
+        }
+
+        <div class="login-switch">
+            <span>@(isRegistering ? "Already have an account?" : "New to NationBuilder?")</span>
+            <button type="button" class="btn btn-link" @onclick="ToggleRegistration">
+                @(isRegistering ? "Log in" : "Create an account")
+            </button>
+        </div>
+    </div>
+</section>
+
+@code {
+    private LoginFormModel loginForm = new();
+    private bool showInvalidCredentials;
+    private bool isRegistering;
+    private string errorMessage = "Invalid credentials";
+    private string? inputSecurityWarning;
+    private bool inputSecurityWarningDismissed;
+
+    private async Task SignIn()
+    {
+        if (!ValidateInputSafety())
+        {
+            return;
+        }
+
+        showInvalidCredentials = false;
+        try
+        {
+            var succeeded = isRegistering
+                ? await Authentication.RegisterAsync(loginForm.Email, loginForm.Password)
+                : await Authentication.SignInAsync(loginForm.Email, loginForm.Password);
+            if (!succeeded)
+            {
+                showInvalidCredentials = true;
+                errorMessage = "Invalid email or password.";
+                return;
+            }
+
+            Navigation.NavigateTo("/", replace: true);
+        }
+        catch (InvalidOperationException exception)
+        {
+            showInvalidCredentials = true;
+            errorMessage = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            showInvalidCredentials = true;
+            errorMessage = $"Local account storage failed: {exception.Message}";
+        }
+    }
+
+    private void ToggleRegistration()
+    {
+        isRegistering = !isRegistering;
+        showInvalidCredentials = false;
+    }
+
+    private void CheckInput(ChangeEventArgs args)
+    {
+        var warning = InputSecurityGuard.GetWarning(args.Value?.ToString());
+        if (warning is null)
+        {
+            inputSecurityWarning = null;
+            inputSecurityWarningDismissed = false;
+        }
+        else if (!inputSecurityWarningDismissed)
+        {
+            inputSecurityWarning = warning;
+        }
+    }
+
+    private bool ValidateInputSafety()
+    {
+        inputSecurityWarning = InputSecurityGuard.GetWarning(loginForm.Email);
+        inputSecurityWarningDismissed = false;
+        return inputSecurityWarning is null;
+    }
+
+    private void DismissInputWarning()
+    {
+        inputSecurityWarning = null;
+        inputSecurityWarningDismissed = true;
+    }
+
+    private sealed class LoginFormModel
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

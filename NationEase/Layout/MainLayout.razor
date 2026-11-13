@@ -1,18 +1,44 @@
 ﻿@inherits LayoutComponentBase
 <a class="skip-link" href="#main-content">Skip to main content</a>
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="page @(!Authentication.IsAuthenticated ? "login-page-layout" : null)">
+    @if (Authentication.IsAuthenticated)
+    {
+        <div class="sidebar">
+            <NavMenu />
+        </div>
+    }
 
     <main id="main-content" tabindex="-1">
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <header class="top-row px-4">
+            @if (Authentication.IsAuthenticated)
+            {
+                <div class="user-session">
+                    <span class="current-user">@Authentication.CurrentUser?.Email</span>
+                    <button type="button" class="btn btn-link sign-out-button" @onclick="SignOut">
+                        Sign out
+                    </button>
+                </div>
+            }
+            else
+            {
+                <a class="navbar-brand" href="">NationBuilder</a>
+            }
+        </header>
 
-        <article class="content px-4">
+        <article class="content px-4 @(!Authentication.IsAuthenticated ? "login-content" : null)">
             @Body
         </article>
     </main>
 </div>
+
+@inject NationEase.Services.LocalAuthenticationService Authentication
+@inject NavigationManager Navigation
+
+@code {
+    private async Task SignOut()
+    {
+        await Authentication.SignOutAsync();
+        Navigation.NavigateTo("/login", replace: true);
+    }
+}

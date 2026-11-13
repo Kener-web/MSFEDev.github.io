@@ -1,0 +1,60 @@
+namespace NationEase.Data;
+
+public sealed record CitySeed(string StateAcronym, string Name, long Population);
+
+public static class CitySeedData
+{
+    public static IReadOnlyList<CitySeed> Cities { get; } =
+    [
+        new("NY", "New York", 8584629),
+        new("CA", "Los Angeles", 3869089),
+        new("IL", "Chicago", 2731585),
+        new("TX", "Houston", 2397315),
+        new("AZ", "Phoenix", 1665481),
+        new("PA", "Philadelphia", 1574281),
+        new("FL", "Jacksonville", 1017689),
+        new("NC", "Charlotte", 964784),
+        new("OH", "Columbus", 938396),
+        new("IN", "Indianapolis", 901116),
+        new("WA", "Seattle", 784777),
+        new("CO", "Denver", 740613),
+        new("TN", "Nashville", 721074),
+        new("OK", "Oklahoma City", 719849),
+        new("NV", "Las Vegas", 679817),
+        new("MA", "Boston", 672973),
+        new("MI", "Detroit", 649095),
+        new("KY", "Louisville", 641962),
+        new("OR", "Portland", 635109),
+        new("MD", "Baltimore", 569997),
+        new("WI", "Milwaukee", 562407),
+        new("NM", "Albuquerque", 556588),
+        new("GA", "Atlanta", 529110),
+        new("MO", "Kansas City", 521220),
+        new("NE", "Omaha", 488797),
+        new("VA", "Virginia Beach", 453737),
+        new("MN", "Minneapolis", 430324),
+        new("KS", "Wichita", 400987),
+        new("LA", "New Orleans", 362154),
+        new("HI", "Honolulu", 341868),
+        new("NJ", "Newark", 323808),
+        new("AK", "Anchorage", 287155),
+        new("ID", "Boise", 238429),
+        new("AL", "Huntsville", 233627),
+        new("UT", "Salt Lake City", 218428),
+        new("SD", "Sioux Falls", 213748),
+        new("IA", "Des Moines", 212086),
+        new("AR", "Little Rock", 206427),
+        new("RI", "Providence", 195310),
+        new("SC", "Charleston", 159423),
+        new("CT", "Bridgeport", 152273),
+        new("MS", "Jackson", 141196),
+        new("ND", "Fargo", 136275),
+        new("MT", "Billings", 121239),
+        new("NH", "Manchester", 116818),
+        new("DE", "Wilmington", 73512),
+        new("ME", "Portland", 69911),
+        new("WY", "Cheyenne", 66507),
+        new("WV", "Charleston", 46117),
+        new("VT", "Burlington", 44019)
+    ];
+}

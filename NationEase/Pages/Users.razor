@@ -1,0 +1,197 @@
+@page "/users"
+@using System.ComponentModel.DataAnnotations
+@inject LocalNationService Nation
+@inject LocalAuthenticationService Authentication
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Users - NationBuilder</PageTitle>
+
+<h1>Users</h1>
+<p>Manage the browser-local accounts on this device. Each account has its own states and cities.</p>
+
+@if (editingUserId is not null)
+{
+    <EditForm Model="userForm" OnValidSubmit="SaveUser" class="user-edit-form mb-4">
+        <DataAnnotationsValidator />
+        <h2>Edit user</h2>
+        <div class="mb-3">
+            <label for="user-email" class="form-label">Email</label>
+            <InputText id="user-email" class="form-control" type="email" @bind-Value="userForm.Email" @oninput="CheckInput" />
+            <ValidationMessage For="@(() => userForm.Email)" />
+        </div>
+        <div class="mb-3">
+            <label for="user-password" class="form-label">New password (optional)</label>
+            <InputText id="user-password" class="form-control" type="password" @bind-Value="userForm.Password" />
+            <div class="form-text">Leave blank to keep the current password. New passwords must be at least 12 characters and include uppercase, lowercase, digit, and symbol.</div>
+        </div>
+        <ValidationSummary />
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+        </div>
+    </EditForm>
+}
+
+<SecurityWarningPopup Message="@inputSecurityWarning" OnDismiss="DismissInputWarning" />
+
+@if (!string.IsNullOrWhiteSpace(operationError))
+{
+    <div class="alert alert-danger" role="alert">@operationError</div>
+}
+
+<div class="table-responsive" role="region" aria-label="Users list" tabindex="0">
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th scope="col">Actions</th>
+            <th scope="col">Email</th>
+            <th scope="col">Session</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in users)
+        {
+            <tr>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditUser(user)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user)">Delete</button>
+                </td>
+                <td>@user.Email</td>
+                <td>@(user.UserId == Authentication.CurrentUser?.UserId ? "Signed in" : string.Empty)</td>
+            </tr>
+        }
+    </tbody>
+</table>
+</div>
+
+@code {
+    private List<UserResponse> users = new();
+    private UserFormModel userForm = new();
+    private int? editingUserId;
+    private string? operationError;
+    private string? inputSecurityWarning;
+    private bool inputSecurityWarningDismissed;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await Nation.GetUsersAsync();
+    }
+
+    private async Task SaveUser()
+    {
+        if (!ValidateInputSafety())
+        {
+            return;
+        }
+
+        operationError = null;
+        try
+        {
+            var userId = editingUserId
+                ?? throw new InvalidOperationException("Select a user to edit before saving.");
+            await Authentication.UpdateUserAsync(
+                userId,
+                userForm.Email,
+                string.IsNullOrWhiteSpace(userForm.Password) ? null : userForm.Password);
+
+            CancelEdit();
+            await LoadUsers();
+        }
+        catch (InvalidOperationException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (KeyNotFoundException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The user could not be saved: {exception.Message}";
+        }
+    }
+
+    private void EditUser(UserResponse user)
+    {
+        editingUserId = user.UserId;
+        userForm = new UserFormModel { Email = user.Email };
+        operationError = null;
+    }
+
+    private async Task DeleteUser(UserResponse user)
+    {
+        operationError = null;
+        if (!await JS.InvokeAsync<bool>("confirm", $"Delete {user.Email} and all of their states and cities?"))
+        {
+            return;
+        }
+
+        try
+        {
+            var isCurrentUser = user.UserId == Authentication.CurrentUser?.UserId;
+            await Authentication.DeleteUserAsync(user.UserId);
+            if (isCurrentUser)
+            {
+                Navigation.NavigateTo("/login", replace: true);
+                return;
+            }
+
+            await LoadUsers();
+        }
+        catch (KeyNotFoundException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The user could not be deleted: {exception.Message}";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingUserId = null;
+        userForm = new UserFormModel();
+    }
+
+    private void CheckInput(ChangeEventArgs args)
+    {
+        var warning = InputSecurityGuard.GetWarning(args.Value?.ToString());
+        if (warning is null)
+        {
+            inputSecurityWarning = null;
+            inputSecurityWarningDismissed = false;
+        }
+        else if (!inputSecurityWarningDismissed)
+        {
+            inputSecurityWarning = warning;
+        }
+    }
+
+    private bool ValidateInputSafety()
+    {
+        inputSecurityWarning = InputSecurityGuard.GetWarning(userForm.Email);
+        inputSecurityWarningDismissed = false;
+        return inputSecurityWarning is null;
+    }
+
+    private void DismissInputWarning()
+    {
+        inputSecurityWarning = null;
+        inputSecurityWarningDismissed = true;
+    }
+
+    private sealed class UserFormModel
+    {
+        [Required, EmailAddress, StringLength(254)]
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+    }
+}

@@ -1,6 +1,10 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@inject NationEase.Services.LocalAuthenticationService Authentication
+
+@if (Authentication.IsAuthenticated)
+{
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">NationEase</a>
+        <a class="navbar-brand" href="">NationBuilder</a>
         <button type="button"
                 class="navbar-toggler"
                 aria-label="Toggle navigation menu"
@@ -37,7 +41,17 @@
         </div>
 -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="citycard" @onclick="CloseNavMenu">
+            <NavLink class="nav-link" href="users" @onclick="CloseNavMenu">
+                <span class="bi bi-people" aria-hidden="true"></span> Users
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="states" @onclick="CloseNavMenu">
+                <span class="bi bi-map" aria-hidden="true"></span> States
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="cities" @onclick="CloseNavMenu">
                 <span class="bi bi-building" aria-hidden="true"></span> Cities
             </NavLink>
         </div>
@@ -48,11 +62,19 @@
         </div>
     </nav>
 </div>
+}
+
+@implements IDisposable
 
 @code {
     private bool collapseNavMenu = true;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    protected override void OnInitialized()
+    {
+        Authentication.AuthenticationStateChanged += OnAuthenticationStateChanged;
+    }
 
     private void ToggleNavMenu()
     {
@@ -62,5 +84,15 @@
     private void CloseNavMenu()
     {
         collapseNavMenu = true;
+    }
+
+    private void OnAuthenticationStateChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Authentication.AuthenticationStateChanged -= OnAuthenticationStateChanged;
     }
 }

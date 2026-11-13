@@ -1,0 +1,60 @@
+namespace NationEase.Data;
+
+public sealed record StateSeed(DateOnly Date, string Acronym, string Name);
+
+public static class StateSeedData
+{
+    public static IReadOnlyList<StateSeed> States { get; } =
+    [
+        new(new(1787, 12, 7), "DE", "Delaware"),
+        new(new(1787, 12, 12), "PA", "Pennsylvania"),
+        new(new(1787, 12, 18), "NJ", "New Jersey"),
+        new(new(1788, 1, 2), "GA", "Georgia"),
+        new(new(1788, 1, 9), "CT", "Connecticut"),
+        new(new(1788, 2, 6), "MA", "Massachusetts"),
+        new(new(1788, 4, 28), "MD", "Maryland"),
+        new(new(1788, 5, 23), "SC", "South Carolina"),
+        new(new(1788, 6, 21), "NH", "New Hampshire"),
+        new(new(1788, 6, 25), "VA", "Virginia"),
+        new(new(1788, 7, 26), "NY", "New York"),
+        new(new(1788, 11, 21), "NC", "North Carolina"),
+        new(new(1790, 5, 29), "RI", "Rhode Island"),
+        new(new(1791, 3, 4), "VT", "Vermont"),
+        new(new(1792, 6, 1), "KY", "Kentucky"),
+        new(new(1796, 6, 1), "TN", "Tennessee"),
+        new(new(1803, 3, 1), "OH", "Ohio"),
+        new(new(1812, 4, 30), "LA", "Louisiana"),
+        new(new(1816, 12, 11), "IN", "Indiana"),
+        new(new(1817, 12, 10), "MS", "Mississippi"),
+        new(new(1818, 12, 3), "IL", "Illinois"),
+        new(new(1819, 12, 14), "AL", "Alabama"),
+        new(new(1820, 3, 15), "ME", "Maine"),
+        new(new(1821, 8, 10), "MO", "Missouri"),
+        new(new(1836, 6, 15), "AR", "Arkansas"),
+        new(new(1837, 1, 26), "MI", "Michigan"),
+        new(new(1845, 3, 3), "FL", "Florida"),
+        new(new(1845, 12, 29), "TX", "Texas"),
+        new(new(1846, 12, 28), "IA", "Iowa"),
+        new(new(1848, 5, 29), "WI", "Wisconsin"),
+        new(new(1850, 9, 9), "CA", "California"),
+        new(new(1858, 5, 11), "MN", "Minnesota"),
+        new(new(1859, 2, 14), "OR", "Oregon"),
+        new(new(1861, 1, 29), "KS", "Kansas"),
+        new(new(1863, 6, 20), "WV", "West Virginia"),
+        new(new(1864, 10, 31), "NV", "Nevada"),
+        new(new(1867, 3, 1), "NE", "Nebraska"),
+        new(new(1876, 8, 1), "CO", "Colorado"),
+        new(new(1889, 11, 2), "ND", "North Dakota"),
+        new(new(1889, 11, 2), "SD", "South Dakota"),
+        new(new(1889, 11, 8), "MT", "Montana"),
+        new(new(1889, 11, 11), "WA", "Washington"),
+        new(new(1890, 7, 3), "ID", "Idaho"),
+        new(new(1890, 7, 10), "WY", "Wyoming"),
+        new(new(1896, 1, 4), "UT", "Utah"),
+        new(new(1907, 11, 16), "OK", "Oklahoma"),
+        new(new(1912, 1, 6), "NM", "New Mexico"),
+        new(new(1912, 2, 14), "AZ", "Arizona"),
+        new(new(1959, 1, 3), "AK", "Alaska"),
+        new(new(1959, 8, 21), "HI", "Hawaii")
+    ];
+}

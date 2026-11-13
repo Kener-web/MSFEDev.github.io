@@ -10,6 +10,8 @@ public class City
 
     public decimal Population { get; set; }
 
+    public DateOnly? FoundingDate { get; set; }
+
     public State? State { get; set; }
 
 /*

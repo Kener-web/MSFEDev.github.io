@@ -1,44 +1,209 @@
 @page "/states"
+@using System.ComponentModel.DataAnnotations
+@inject LocalNationService Nation
+@inject LocalAuthenticationService Authentication
 
-@using NationEase.Models
-@using NationEase.Data
+<PageTitle>States - NationBuilder</PageTitle>
 
-<h3>US States</h3>
+<h1>States</h1>
 
+<EditForm Model="stateForm" OnValidSubmit="SaveState" class="row g-2 mb-4">
+    <DataAnnotationsValidator />
+    <div class="col-md-3">
+        <label for="state-date" class="form-label">Statehood date</label>
+        <InputDate id="state-date" class="form-control" @bind-Value="stateForm.Date" />
+    </div>
+    <div class="col-md-2">
+        <label for="state-acronym" class="form-label">Acronym</label>
+        <InputText id="state-acronym" class="form-control" @bind-Value="stateForm.Acronym" @oninput="CheckInput" />
+    </div>
+    <div class="col-md-4">
+        <label for="state-name" class="form-label">State</label>
+        <InputText id="state-name" class="form-control" @bind-Value="stateForm.Name" @oninput="CheckInput" />
+    </div>
+    <div class="col-md-3 d-flex align-items-end gap-2">
+        <button type="submit" class="btn btn-primary">@(editingStateId is null ? "Add State" : "Save changes")</button>
+        @if (editingStateId is not null)
+        {
+            <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+        }
+    </div>
+    <ValidationSummary />
+</EditForm>
+
+<SecurityWarningPopup Message="@inputSecurityWarning" OnDismiss="DismissInputWarning" />
+
+@if (!string.IsNullOrWhiteSpace(operationError))
+{
+    <div class="alert alert-danger" role="alert">@operationError</div>
+}
+
+<div class="table-responsive" role="region" aria-label="States list" tabindex="0">
 <table class="table table-striped">
-
     <thead>
         <tr>
-            <th>Id</th>
-            <th>Date</th>
-            <th>Acronym</th>
-            <th>State</th>
+            <th scope="col">Actions</th>
+            <th scope="col">Id</th>
+            <th scope="col">Date</th>
+            <th scope="col">Acronym</th>
+            <th scope="col">State</th>
         </tr>
     </thead>
-
     <tbody>
-
-    @foreach (var state in states)
-    {
-        <tr>
-            <td>@state.StateId</td>
-            <td>@state.Date</td>
-            <td>@state.Acronym</td>
-            <td>@state.Name</td>
-        </tr>
-    }
-
+        @foreach (var state in states)
+        {
+            <tr>
+                <td>
+                    <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditState(state)">Edit</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteState(state.StateId)">Delete</button>
+                </td>
+                <td>@state.StateId</td>
+                <td>@state.Date.ToString("yyyy/MM/dd")</td>
+                <td>@state.Acronym</td>
+                <td>@state.Name</td>
+            </tr>
+        }
     </tbody>
-
 </table>
+</div>
 
 @code {
+    private List<StateResponse> states = new();
+    private StateFormModel stateForm = new();
+    private int? editingStateId;
+    private string? operationError;
+    private string? inputSecurityWarning;
+    private bool inputSecurityWarningDismissed;
 
-    private List<State> states = new();
-
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        states = StateRepository.GetStates();
+        await LoadStates();
     }
 
+    private async Task LoadStates()
+    {
+        states = await Nation.GetStatesAsync(Authentication.CurrentUser!.UserId);
+    }
+
+    private async Task SaveState()
+    {
+        if (!ValidateInputSafety())
+        {
+            return;
+        }
+
+        operationError = null;
+        try
+        {
+            var request = new CreateStateRequest
+            {
+                Acronym = stateForm.Acronym,
+                Name = stateForm.Name,
+                Date = stateForm.Date
+            };
+
+            if (editingStateId is int id)
+            {
+                await Nation.UpdateStateAsync(Authentication.CurrentUser!.UserId, id, new UpdateStateRequest
+                {
+                    Acronym = request.Acronym,
+                    Name = request.Name,
+                    Date = request.Date
+                });
+            }
+            else
+            {
+                await Nation.CreateStateAsync(Authentication.CurrentUser!.UserId, request);
+            }
+
+            CancelEdit();
+            await LoadStates();
+        }
+        catch (InvalidOperationException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The state could not be saved: {exception.Message}";
+        }
+    }
+
+    private void EditState(StateResponse state)
+    {
+        editingStateId = state.StateId;
+        stateForm = new StateFormModel
+        {
+            Acronym = state.Acronym,
+            Name = state.Name,
+            Date = state.Date
+        };
+        operationError = null;
+    }
+
+    private async Task DeleteState(int id)
+    {
+        operationError = null;
+        try
+        {
+            await Nation.DeleteStateAsync(Authentication.CurrentUser!.UserId, id);
+            await LoadStates();
+        }
+        catch (InvalidOperationException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (KeyNotFoundException exception)
+        {
+            operationError = exception.Message;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"Could not delete the state: {exception.Message}";
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingStateId = null;
+        stateForm = new StateFormModel();
+    }
+
+    private void CheckInput(ChangeEventArgs args)
+    {
+        var warning = InputSecurityGuard.GetWarning(args.Value?.ToString());
+        if (warning is null)
+        {
+            inputSecurityWarning = null;
+            inputSecurityWarningDismissed = false;
+        }
+        else if (!inputSecurityWarningDismissed)
+        {
+            inputSecurityWarning = warning;
+        }
+    }
+
+    private bool ValidateInputSafety()
+    {
+        inputSecurityWarning = InputSecurityGuard.GetWarning(stateForm.Acronym, stateForm.Name);
+        inputSecurityWarningDismissed = false;
+        return inputSecurityWarning is null;
+    }
+
+    private void DismissInputWarning()
+    {
+        inputSecurityWarning = null;
+        inputSecurityWarningDismissed = true;
+    }
+
+    private sealed class StateFormModel
+    {
+        [Required, StringLength(2, MinimumLength = 2)]
+        public string Acronym { get; set; } = string.Empty;
+
+        [Required, StringLength(100)]
+        public string Name { get; set; } = string.Empty;
+
+        public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+    }
 }

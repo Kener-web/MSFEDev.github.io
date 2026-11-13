@@ -1,50 +1,58 @@
 @page "/nation-builder"
 
-@using NationEase.Services
+@using NationEase.Contracts
 
-@inject NationBuilderService Builder
+@inject LocalNationService Nation
+@inject LocalAuthenticationService Authentication
 @inject IJSRuntime JS
 
-<h3>Nation Builder</h3>
+<h1>Nation Builder</h1>
+
+@if (!string.IsNullOrWhiteSpace(operationError))
+{
+    <div class="alert alert-danger" role="alert">@operationError</div>
+}
 
 <p>
     Cities Selected:
-    @Builder.NationBuilder.Cities.Count
+    @cities.Count
 </p>
 <p>
     Total Population:
-    @Builder.NationBuilder.TotalPopulation.ToString("N0")
+    @cities.Sum(city => city.Population).ToString("N0")
 </p>
 <p>
     Average Population:
-    @Builder.NationBuilder.AveragePopulation.ToString("N0")
+    @(cities.Count == 0 ? 0 : cities.Average(city => city.Population).ToString("N3"))
 </p>
 <p>
     Largest City:
-    @Builder.NationBuilder.LargestCity?.Name
+    @cities.MaxBy(city => city.Population)?.Name
 </p>
 <p>
     Smallest City:
-    @Builder.NationBuilder.SmallestCity?.Name
+    @cities.MinBy(city => city.Population)?.Name
 </p>
 
 
 
+<div class="table-responsive" role="region" aria-label="Selected cities" tabindex="0">
 <table class="table">
 
     <thead>
 
         <tr>
-            <th></th>
-            <th>City</th>
-            <th>Population</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+            <th scope="col">Founded</th>
+            <th scope="col">City</th>
+            <th scope="col">Population</th>
         </tr>
 
     </thead>
 
     <tbody>
 
-        @foreach(var city in Builder.NationBuilder.Cities.OrderByDescending(c => c.Population))
+        @foreach(var city in cities.OrderByDescending(c => c.Population))
         {
             <tr data-city-id="@city.CityId">
                 <td>
@@ -54,8 +62,9 @@
                         Remove
                     </button>
                 </td>
+                <td>@(city.FoundingDate?.ToString("yyyy/MM/dd") ?? "Unknown")</td>
                 <td>
-                    [@city.State?.Acronym]
+                    [@city.StateAcronym]
                     @city.Name
                 </td>
 
@@ -66,6 +75,7 @@
     </tbody>
 
 </table>
+</div>
 <button type="button"
         class="btn btn-warning"
         @onclick="ClearNation">
@@ -74,28 +84,56 @@
 
 
 @code {
+    private List<CityResponse> cities = new();
     private int? cityIdToFocus;
     private bool focusAfterRemove;
+    private string? operationError;
 
-    private void RemoveCity(int cityId)
+    protected override async Task OnInitializedAsync()
     {
-        var cities = Builder.NationBuilder.Cities
-            .OrderByDescending(city => city.Population)
-            .ToList();
-        var removedCityIndex = cities.FindIndex(city => city.CityId == cityId);
-        cityIdToFocus = removedCityIndex > 0
-            ? cities[removedCityIndex - 1].CityId
-            : removedCityIndex >= 0 && removedCityIndex + 1 < cities.Count
-                ? cities[removedCityIndex + 1].CityId
-                : null;
-
-        Builder.NationBuilder.RemoveCity(cityId);
-        focusAfterRemove = true;
+        await LoadCart();
     }
 
-    private void ClearNation()
+    private async Task LoadCart()
     {
-        Builder.NationBuilder.Clear();
+        cities = await Nation.GetCartAsync(Authentication.CurrentUser!.UserId);
+    }
+
+    private async Task RemoveCity(int cityId)
+    {
+        operationError = null;
+        try
+        {
+            var orderedCities = cities.OrderByDescending(city => city.Population).ToList();
+            var removedCityIndex = orderedCities.FindIndex(city => city.CityId == cityId);
+            cityIdToFocus = removedCityIndex > 0
+                ? orderedCities[removedCityIndex - 1].CityId
+                : removedCityIndex >= 0 && removedCityIndex + 1 < orderedCities.Count
+                    ? orderedCities[removedCityIndex + 1].CityId
+                    : null;
+
+            await Nation.RemoveFromCartAsync(Authentication.CurrentUser!.UserId, cityId);
+            await LoadCart();
+            focusAfterRemove = true;
+        }
+        catch (JSException exception)
+        {
+            operationError = $"The city could not be removed from your cart: {exception.Message}";
+        }
+    }
+
+    private async Task ClearNation()
+    {
+        operationError = null;
+        try
+        {
+            await Nation.ClearCartAsync(Authentication.CurrentUser!.UserId);
+            await LoadCart();
+        }
+        catch (JSException exception)
+        {
+            operationError = $"Your cart could not be cleared: {exception.Message}";
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
