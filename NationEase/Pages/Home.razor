@@ -1,14 +1,204 @@
-﻿@page "/"
+@page "/"
+@implements IAsyncDisposable
+@using Microsoft.JSInterop
+@inject LocalNationService Nation
+@inject LocalAuthenticationService Authentication
+@inject IConfiguration Configuration
+@inject IJSRuntime JS
 
-<PageTitle>Home - NationBuilder</PageTitle>
+<PageTitle>Nation Map - NationBuilder</PageTitle>
 
-<h1>NationBuilder</h1>
+<div class="nation-map-workspace">
+    <aside class="nation-map-info-panel" aria-label="Nation information">
+        <h1>Nation Map</h1>
+        <p>Satellite view of the contiguous United States with your selected city pins.</p>
 
-<p>Manage your browser-local user accounts, states, and cities, then build a nation from your selected cities.</p>
+        <section class="nation-map-summary" aria-label="Nation summary">
+            <div class="nation-map-stat">
+                <span class="nation-map-stat-label">Cities</span>
+                <strong>@cities.Count</strong>
+            </div>
+            <div class="nation-map-stat">
+                <span class="nation-map-stat-label">Total population</span>
+                <strong>@cities.Sum(city => city.Population).ToString("N0")</strong>
+            </div>
+            <div class="nation-map-stat">
+                <span class="nation-map-stat-label">Average population</span>
+                <strong>@(cities.Count == 0 ? "—" : cities.Average(city => city.Population).ToString("N0"))</strong>
+            </div>
+            <div class="nation-map-stat">
+                <span class="nation-map-stat-label">Largest city</span>
+                <strong>@FormatCity(cities.MaxBy(city => city.Population))</strong>
+            </div>
+            <div class="nation-map-stat">
+                <span class="nation-map-stat-label">Smallest city</span>
+                <strong>@FormatCity(cities.MinBy(city => city.Population))</strong>
+            </div>
+        </section>
 
-<ul>
-    <li><a href="users">Create and manage users</a></li>
-    <li><a href="states">Create and manage states</a></li>
-    <li><a href="cities">Create and manage cities</a></li>
-    <li><a href="nation-builder">Build your nation</a></li>
-</ul>
+        @if (!string.IsNullOrWhiteSpace(mapError))
+        {
+            <div class="alert alert-danger" role="alert">@mapError</div>
+        }
+        else if (string.IsNullOrWhiteSpace(mapsApiKey))
+        {
+            <div class="alert alert-info" role="status">
+                Configure <code>GoogleMaps:ApiKey</code> in <code>wwwroot/appsettings.json</code> to display the map.
+            </div>
+        }
+
+        @if (unresolvedCities > 0)
+        {
+            <div class="alert alert-info" role="status">
+                Could not find coordinates for @unresolvedCities selected @(unresolvedCities == 1 ? "city" : "cities").
+                Enable Google Geocoding or add coordinates on the <a href="cities">Cities page</a>.
+            </div>
+        }
+
+        @if (coordinateSaveFailures > 0)
+        {
+            <div class="alert alert-info" role="status">
+                Coordinates could not be saved for @coordinateSaveFailures @(coordinateSaveFailures == 1 ? "city" : "cities"). Set them on the Cities page.
+            </div>
+        }
+
+        <p class="map-pin-count" aria-live="polite">
+            Showing @citiesOnMapCount @(citiesOnMapCount == 1 ? "city pin" : "city pins").
+        </p>
+    </aside>
+
+    <div @ref="mapElement"
+         class="nation-map-canvas"
+         role="application"
+         aria-label="Satellite map showing selected city pins"></div>
+</div>
+
+@code {
+    private List<CityResponse> cities = new();
+    private ElementReference mapElement;
+    private IJSObjectReference? mapModule;
+    private string? mapError;
+    private string? mapsApiKey;
+    private int citiesOnMapCount;
+    private int unresolvedCities;
+    private int coordinateSaveFailures;
+    private DotNetObjectReference<Home>? coordinateReceiver;
+    private bool mapInitialized;
+    private bool mapInitializationAttempted;
+    private int refreshVersion;
+
+    private static string FormatCity(CityResponse? city) =>
+        city is null ? "—" : $"[{city.StateAcronym}] {city.Name}";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nation.SelectedCitiesChanged += OnSelectedCitiesChanged;
+        mapsApiKey = Configuration["GoogleMaps:ApiKey"];
+        cities = await Nation.GetCartAsync(Authentication.CurrentUser!.UserId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (mapInitialized || mapInitializationAttempted || string.IsNullOrWhiteSpace(mapsApiKey))
+        {
+            return;
+        }
+
+        mapInitializationAttempted = true;
+        try
+        {
+            mapModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/nationMap.js");
+            await mapModule.InvokeVoidAsync("initializeMap", mapElement, mapsApiKey);
+            mapInitialized = true;
+            coordinateReceiver = DotNetObjectReference.Create(this);
+            await RefreshSelectedCitiesAsync();
+        }
+        catch (JSException exception)
+        {
+            mapError = $"The Google Map could not be loaded: {exception.Message}";
+            StateHasChanged();
+        }
+    }
+
+    private void OnSelectedCitiesChanged()
+    {
+        _ = InvokeAsync(RefreshSelectedCitiesAsync);
+    }
+
+    private async Task RefreshSelectedCitiesAsync()
+    {
+        var currentVersion = ++refreshVersion;
+        try
+        {
+            var refreshedCities = await Nation.GetCartAsync(Authentication.CurrentUser!.UserId);
+            if (currentVersion != refreshVersion)
+            {
+                return;
+            }
+
+            cities = refreshedCities;
+            if (mapModule is not null && mapInitialized)
+            {
+                var mappedCities = cities
+                    .Select(city => new
+                    {
+                        city.CityId,
+                        city.Name,
+                        city.StateAcronym,
+                        Latitude = city.Latitude,
+                        Longitude = city.Longitude
+                    })
+                    .ToArray();
+
+                var result = await mapModule.InvokeAsync<Dictionary<string, int>>(
+                    "updateMarkers",
+                    mappedCities,
+                    coordinateReceiver);
+                if (currentVersion != refreshVersion)
+                {
+                    return;
+                }
+
+                citiesOnMapCount = result["markerCount"];
+                unresolvedCities = result["unresolvedCount"];
+                coordinateSaveFailures = result["coordinateSaveFailures"];
+            }
+
+            StateHasChanged();
+        }
+        catch (JSException exception)
+        {
+            if (currentVersion != refreshVersion)
+            {
+                return;
+            }
+
+            mapError = $"The selected cities or map could not be refreshed: {exception.Message}";
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable("SaveCityCoordinates")]
+    public async Task SaveCityCoordinatesAsync(int cityId, decimal latitude, decimal longitude)
+    {
+        await Nation.SaveCityCoordinatesAsync(
+            Authentication.CurrentUser!.UserId,
+            cityId,
+            latitude,
+            longitude);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Nation.SelectedCitiesChanged -= OnSelectedCitiesChanged;
+        refreshVersion++;
+        coordinateReceiver?.Dispose();
+        if (mapModule is null)
+        {
+            return;
+        }
+
+        await mapModule.InvokeVoidAsync("dispose");
+        await mapModule.DisposeAsync();
+    }
+}

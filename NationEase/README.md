@@ -16,12 +16,17 @@ Open the URL printed by the .NET development server. On first visit, the app ini
 
 - Create, sign in to, edit, and delete browser-local user accounts.
 - Manage the full US state catalog in ratification/admission order, and create, update, and delete states and cities for each account.
+- Set latitude and longitude for cities. Approximate city-center coordinates for the 50 seeded cities are prefilled (and existing seed records are backfilled without replacing user-entered coordinates). Nation Map stays focused on the contiguous United States in satellite view and marks each selected city with coordinates inside that map area.
 - Select cities for a user's Nation Builder.
 - Each account starts with the 50 US states in ratification/admission order (IDs 1-50) and one largest city per state. City IDs 1-50 are ordered by descending 2025 population estimate (New York = 1, Los Angeles = 2); additional cities receive the next account-local ID.
 - City seed names and populations use the U.S. Census Bureau's [Vintage 2025 subcounty population estimates](https://www2.census.gov/programs-surveys/popest/datasets/2020-2025/cities/totals/sub-est2025.csv), the latest completed vintage.
 
 Data belongs to the current browser profile and site origin. It is not synchronized to other devices or browsers, and clearing site data can remove it. Private browsing, browser storage restrictions, or an unsupported browser may prevent persistent storage.
-The database migration makes city IDs account-local and preserves existing accounts, cities, and selections. Existing cities receive IDs above the 50 seeded cities.
+The database migration makes city IDs account-local and preserves existing accounts, cities, and selections. Existing cities receive IDs above the 50 seeded cities. The coordinate migration adds nullable latitude and longitude fields without removing existing city data.
+
+## Google Maps setup
+
+The map uses the Google Maps JavaScript API. Enable the Maps JavaScript API and Geocoding API for a Google Cloud project, configure billing as Google requires, and restrict the browser key to your app's allowed HTTP referrers and these APIs. Add the key to `GoogleMaps:ApiKey` in `wwwroot/appsettings.json`; do not use an unrestricted key. The map starts centered on the contiguous United States and fits all selected city pins. If a selected city has no coordinates, the map geocodes its name and state and saves the result for later use.
 
 ## Security notice
 

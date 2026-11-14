@@ -38,33 +38,40 @@
     <div class="alert alert-danger" role="alert">@operationError</div>
 }
 
-<div class="table-responsive" role="region" aria-label="States list" tabindex="0">
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th scope="col">Actions</th>
-            <th scope="col">Id</th>
-            <th scope="col">Date</th>
-            <th scope="col">Acronym</th>
-            <th scope="col">State</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var state in states)
-        {
+<div class="table-responsive states-compact-list" role="region" aria-label="States list" tabindex="0">
+    <table class="table">
+        <colgroup>
+            <col class="state-actions-column" />
+            <col class="state-id-column" />
+            <col class="state-date-column" />
+            <col class="state-acronym-column" />
+            <col />
+        </colgroup>
+        <thead>
             <tr>
-                <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditState(state)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteState(state.StateId)">Delete</button>
-                </td>
-                <td>@state.StateId</td>
-                <td>@state.Date.ToString("yyyy/MM/dd")</td>
-                <td>@state.Acronym</td>
-                <td>@state.Name</td>
+                <th scope="col">Actions</th>
+                <th scope="col">Id</th>
+                <th scope="col">Date</th>
+                <th scope="col">Acronym</th>
+                <th scope="col">State</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var state in states)
+            {
+                <tr>
+                    <td class="state-list-actions">
+                        <button type="button" class="btn btn-sm btn-outline-primary" @onclick="() => EditState(state)">Edit</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteState(state.StateId)">Delete</button>
+                    </td>
+                    <td>@state.StateId</td>
+                    <td>@state.Date.ToString("yyyy/MM/dd")</td>
+                    <td>@state.Acronym</td>
+                    <td>@state.Name</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>
 
 @code {

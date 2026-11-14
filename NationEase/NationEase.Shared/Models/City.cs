@@ -12,12 +12,9 @@ public class City
 
     public DateOnly? FoundingDate { get; set; }
 
-    public State? State { get; set; }
+    public decimal? Latitude { get; set; }
 
-/*
-    public string Print()
-    {
-        return $"[{State?.Acronym}] {Name} : {Population:N0}";
-    }
-*/
+    public decimal? Longitude { get; set; }
+
+    public State? State { get; set; }
 }

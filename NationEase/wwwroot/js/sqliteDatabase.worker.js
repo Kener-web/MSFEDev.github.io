@@ -25,11 +25,17 @@ const schema = `
         Name TEXT NOT NULL,
         Population REAL NOT NULL,
         FoundingDate TEXT,
+        Latitude REAL CHECK (Latitude IS NULL OR Latitude BETWEEN -90 AND 90),
+        Longitude REAL CHECK (Longitude IS NULL OR Longitude BETWEEN -180 AND 180),
         PRIMARY KEY (OwnerUserId, CityId),
         FOREIGN KEY (OwnerUserId) REFERENCES Users (UserId) ON DELETE CASCADE,
         FOREIGN KEY (OwnerUserId, StateId) REFERENCES States (OwnerUserId, StateId) ON DELETE RESTRICT
     );
     CREATE TABLE IF NOT EXISTS CityCatalogSeeds (
+        OwnerUserId INTEGER PRIMARY KEY,
+        FOREIGN KEY (OwnerUserId) REFERENCES Users (UserId) ON DELETE CASCADE
+    );
+    CREATE TABLE IF NOT EXISTS CityCoordinateSeeds (
         OwnerUserId INTEGER PRIMARY KEY,
         FOREIGN KEY (OwnerUserId) REFERENCES Users (UserId) ON DELETE CASCADE
     );
@@ -108,7 +114,7 @@ async function initialize() {
                 DROP TABLE IF EXISTS Users;
             `);
             database.exec(schema);
-            database.exec("PRAGMA user_version = 5");
+            database.exec("PRAGMA user_version = 6");
             database.exec("COMMIT");
         } catch (error) {
             database.exec("ROLLBACK");
@@ -121,37 +127,39 @@ async function initialize() {
         database.exec("BEGIN");
         try {
             database.exec(`
-                CREATE TABLE Cities_v5 (
+                CREATE TABLE Cities_v6 (
                     CityId INTEGER NOT NULL,
                     OwnerUserId INTEGER NOT NULL,
                     StateId INTEGER NOT NULL,
                     Name TEXT NOT NULL,
                     Population REAL NOT NULL,
                     FoundingDate TEXT,
+                    Latitude REAL CHECK (Latitude IS NULL OR Latitude BETWEEN -90 AND 90),
+                    Longitude REAL CHECK (Longitude IS NULL OR Longitude BETWEEN -180 AND 180),
                     PRIMARY KEY (OwnerUserId, CityId),
                     FOREIGN KEY (OwnerUserId) REFERENCES Users (UserId) ON DELETE CASCADE,
                     FOREIGN KEY (OwnerUserId, StateId) REFERENCES States (OwnerUserId, StateId) ON DELETE RESTRICT
                 );
-                CREATE TABLE UserCities_v5 (
+                CREATE TABLE UserCities_v6 (
                     UserId INTEGER NOT NULL,
                     CityId INTEGER NOT NULL,
                     PRIMARY KEY (UserId, CityId),
                     FOREIGN KEY (UserId) REFERENCES Users (UserId) ON DELETE CASCADE,
-                    FOREIGN KEY (UserId, CityId) REFERENCES Cities_v5 (OwnerUserId, CityId) ON DELETE CASCADE
+                    FOREIGN KEY (UserId, CityId) REFERENCES Cities_v6 (OwnerUserId, CityId) ON DELETE CASCADE
                 );
-                INSERT INTO Cities_v5 (CityId, OwnerUserId, StateId, Name, Population, FoundingDate)
+                INSERT INTO Cities_v6 (CityId, OwnerUserId, StateId, Name, Population, FoundingDate)
                 SELECT CityId + 50, OwnerUserId, StateId, Name, Population, FoundingDate
                 FROM Cities;
-                INSERT INTO UserCities_v5 (UserId, CityId)
+                INSERT INTO UserCities_v6 (UserId, CityId)
                 SELECT UserId, CityId + 50
                 FROM UserCities;
                 DROP TABLE UserCities;
                 DROP TABLE Cities;
-                ALTER TABLE Cities_v5 RENAME TO Cities;
-                ALTER TABLE UserCities_v5 RENAME TO UserCities;
+                ALTER TABLE Cities_v6 RENAME TO Cities;
+                ALTER TABLE UserCities_v6 RENAME TO UserCities;
             `);
             database.exec(schema);
-            database.exec("PRAGMA user_version = 5");
+            database.exec("PRAGMA user_version = 6");
             database.exec("COMMIT");
         } catch (error) {
             database.exec("ROLLBACK");
@@ -159,6 +167,22 @@ async function initialize() {
         } finally {
             database.exec("PRAGMA foreign_keys = ON");
         }
+    } else if (schemaVersion < 6) {
+        database.exec("BEGIN");
+        try {
+            database.exec(`
+                ALTER TABLE Cities ADD COLUMN Latitude REAL
+                    CHECK (Latitude IS NULL OR Latitude BETWEEN -90 AND 90);
+                ALTER TABLE Cities ADD COLUMN Longitude REAL
+                    CHECK (Longitude IS NULL OR Longitude BETWEEN -180 AND 180);
+                PRAGMA user_version = 6;
+                COMMIT;
+            `);
+        } catch (error) {
+            database.exec("ROLLBACK");
+            throw error;
+        }
+        database.exec(schema);
     } else {
         database.exec(schema);
     }
@@ -184,12 +208,13 @@ async function handle(action, args) {
                         "INSERT INTO States (StateId, OwnerUserId, Date, Acronym, Name) VALUES (?, ?, ?, ?, ?)",
                         [stateId, user.UserId, date, acronym, name]);
                 }
-                for (const [cityId, stateId, name, population] of args.cityRows) {
+                for (const [cityId, stateId, name, population, latitude, longitude] of args.cityRows) {
                     execute(
-                        "INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population) VALUES (?, ?, ?, ?, ?)",
-                        [cityId, user.UserId, stateId, name, population]);
+                        "INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population, Latitude, Longitude) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        [cityId, user.UserId, stateId, name, population, latitude, longitude]);
                 }
                 execute("INSERT INTO CityCatalogSeeds (OwnerUserId) VALUES (?)", [user.UserId]);
+                execute("INSERT INTO CityCoordinateSeeds (OwnerUserId) VALUES (?)", [user.UserId]);
 
                 database.exec("COMMIT");
                 return user;
@@ -199,18 +224,46 @@ async function handle(action, args) {
             }
         }
         case "seedDefaultCities": {
-            if (query("SELECT 1 FROM CityCatalogSeeds WHERE OwnerUserId = ?", [args.userId]).length > 0) {
-                return false;
+            const alreadySeeded = query(
+                "SELECT 1 FROM CityCatalogSeeds WHERE OwnerUserId = ?",
+                [args.userId]).length > 0;
+            if (alreadySeeded) {
+                const coordinatesSeeded = query(
+                    "SELECT 1 FROM CityCoordinateSeeds WHERE OwnerUserId = ?",
+                    [args.userId]).length > 0;
+                if (coordinatesSeeded) {
+                    return false;
+                }
+
+                database.exec("BEGIN");
+                try {
+                    for (const [cityId, stateId, name, , latitude, longitude] of args.cityRows) {
+                        execute(
+                            `UPDATE Cities
+                             SET Latitude = ?, Longitude = ?
+                             WHERE OwnerUserId = ? AND CityId = ? AND StateId = ?
+                               AND Name = ? COLLATE NOCASE
+                               AND Latitude IS NULL AND Longitude IS NULL`,
+                            [latitude, longitude, args.userId, cityId, stateId, name]);
+                    }
+                    execute("INSERT INTO CityCoordinateSeeds (OwnerUserId) VALUES (?)", [args.userId]);
+                    database.exec("COMMIT");
+                    return false;
+                } catch (error) {
+                    database.exec("ROLLBACK");
+                    throw error;
+                }
             }
 
             database.exec("BEGIN");
             try {
-                for (const [cityId, stateId, name, population] of args.cityRows) {
+                for (const [cityId, stateId, name, population, latitude, longitude] of args.cityRows) {
                     execute(
-                        "INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population) VALUES (?, ?, ?, ?, ?)",
-                        [cityId, args.userId, stateId, name, population]);
+                        "INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population, Latitude, Longitude) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        [cityId, args.userId, stateId, name, population, latitude, longitude]);
                 }
                 execute("INSERT INTO CityCatalogSeeds (OwnerUserId) VALUES (?)", [args.userId]);
+                execute("INSERT INTO CityCoordinateSeeds (OwnerUserId) VALUES (?)", [args.userId]);
                 database.exec("COMMIT");
                 return true;
             } catch (error) {

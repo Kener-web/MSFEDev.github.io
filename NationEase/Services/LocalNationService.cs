@@ -1,11 +1,12 @@
 using NationEase.Contracts;
 using NationEase.Data;
-using NationEase.Models;
 
 namespace NationEase.Services;
 
 public sealed class LocalNationService(SqliteOpfsDatabase database)
 {
+    public event Action? SelectedCitiesChanged;
+
     public async Task<UserResponse?> GetUserAsync(int userId) =>
         (await database.QueryAsync<UserResponse>(
             "SELECT UserId, Email FROM Users WHERE UserId = ?",
@@ -55,7 +56,9 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
             index + 1,
             stateIds[city.StateAcronym],
             city.Name,
-            city.Population
+            city.Population,
+            city.Latitude,
+            city.Longitude
         }).ToArray();
     }
 
@@ -170,7 +173,7 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
         database.QueryAsync<CityResponse>(
             """
             SELECT city.CityId, city.StateId, state.Acronym AS StateAcronym, city.Name,
-                   city.Population, city.FoundingDate
+                   city.Population, city.FoundingDate, city.Latitude, city.Longitude
             FROM Cities AS city
             INNER JOIN States AS state
                 ON state.OwnerUserId = city.OwnerUserId AND state.StateId = city.StateId
@@ -181,11 +184,12 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
 
     public async Task<CityResponse> CreateCityAsync(int userId, CreateCityRequest request)
     {
+        ValidateCoordinates(request.Latitude, request.Longitude);
         await EnsureStateExistsAsync(userId, request.StateId);
         var insertedCity = (await database.QueryAsync<IdRow>(
             """
-            INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population, FoundingDate)
-            SELECT COALESCE(MAX(CityId), 0) + 1, ?, ?, ?, ?, ?
+            INSERT INTO Cities (CityId, OwnerUserId, StateId, Name, Population, FoundingDate, Latitude, Longitude)
+            SELECT COALESCE(MAX(CityId), 0) + 1, ?, ?, ?, ?, ?, ?, ?
             FROM Cities
             WHERE OwnerUserId = ?
             RETURNING CityId AS Id
@@ -195,6 +199,8 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
             request.Name.Trim(),
             request.Population,
             request.FoundingDate,
+            request.Latitude,
+            request.Longitude,
             userId)).Single();
 
         return (await GetCityByIdAsync(userId, insertedCity.Id)).Single();
@@ -202,22 +208,54 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
 
     public async Task<CityResponse> UpdateCityAsync(int userId, int cityId, UpdateCityRequest request)
     {
+        ValidateCoordinates(request.Latitude, request.Longitude);
         await EnsureStateExistsAsync(userId, request.StateId);
         var affected = await database.ExecuteAsync(
             """
             UPDATE Cities
-            SET StateId = ?, Name = ?, Population = ?, FoundingDate = ?
+            SET StateId = ?, Name = ?, Population = ?, FoundingDate = ?, Latitude = ?, Longitude = ?
             WHERE CityId = ? AND OwnerUserId = ?
             """,
             request.StateId,
             request.Name.Trim(),
             request.Population,
             request.FoundingDate,
+            request.Latitude,
+            request.Longitude,
             cityId,
             userId);
         EnsureUpdated(affected, "The city no longer exists.");
 
+        SelectedCitiesChanged?.Invoke();
         return (await GetCityByIdAsync(userId, cityId)).Single();
+    }
+
+    public async Task SaveCityCoordinatesAsync(int userId, int cityId, decimal latitude, decimal longitude)
+    {
+        ValidateCoordinates(latitude, longitude);
+        var affected = await database.ExecuteAsync(
+            """
+            UPDATE Cities
+            SET Latitude = ?, Longitude = ?
+            WHERE CityId = ? AND OwnerUserId = ?
+              AND Latitude IS NULL AND Longitude IS NULL
+            """,
+            latitude,
+            longitude,
+            cityId,
+            userId);
+
+        if (affected == 0)
+        {
+            var cityExists = (await database.QueryAsync<CountRow>(
+                "SELECT COUNT(*) AS Count FROM Cities WHERE CityId = ? AND OwnerUserId = ?",
+                cityId,
+                userId)).Single().Count > 0;
+            if (!cityExists)
+            {
+                throw new KeyNotFoundException("The city no longer exists.");
+            }
+        }
     }
 
     public async Task DeleteCityAsync(int userId, int cityId)
@@ -227,13 +265,14 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
             cityId,
             userId);
         EnsureUpdated(affected, "The city no longer exists.");
+        SelectedCitiesChanged?.Invoke();
     }
 
     public Task<List<CityResponse>> GetCartAsync(int userId) =>
         database.QueryAsync<CityResponse>(
             """
             SELECT city.CityId, city.StateId, state.Acronym AS StateAcronym, city.Name,
-                   city.Population, city.FoundingDate
+                   city.Population, city.FoundingDate, city.Latitude, city.Longitude
             FROM UserCities AS selected
             INNER JOIN Cities AS city
                 ON city.OwnerUserId = selected.UserId AND city.CityId = selected.CityId
@@ -259,16 +298,23 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
             "INSERT OR IGNORE INTO UserCities (UserId, CityId) VALUES (?, ?)",
             userId,
             cityId);
+        SelectedCitiesChanged?.Invoke();
     }
 
-    public Task RemoveFromCartAsync(int userId, int cityId) =>
-        database.ExecuteAsync(
+    public async Task RemoveFromCartAsync(int userId, int cityId)
+    {
+        await database.ExecuteAsync(
             "DELETE FROM UserCities WHERE UserId = ? AND CityId = ?",
             userId,
             cityId);
+        SelectedCitiesChanged?.Invoke();
+    }
 
-    public Task ClearCartAsync(int userId) =>
-        database.ExecuteAsync("DELETE FROM UserCities WHERE UserId = ?", userId);
+    public async Task ClearCartAsync(int userId)
+    {
+        await database.ExecuteAsync("DELETE FROM UserCities WHERE UserId = ?", userId);
+        SelectedCitiesChanged?.Invoke();
+    }
 
     private async Task EnsureEmailAvailableAsync(string email, int? exceptUserId = null)
     {
@@ -322,7 +368,7 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
         database.QueryAsync<CityResponse>(
             """
             SELECT city.CityId, city.StateId, state.Acronym AS StateAcronym, city.Name,
-                   city.Population, city.FoundingDate
+                   city.Population, city.FoundingDate, city.Latitude, city.Longitude
             FROM Cities AS city
             INNER JOIN States AS state
                 ON state.OwnerUserId = city.OwnerUserId AND state.StateId = city.StateId
@@ -332,6 +378,24 @@ public sealed class LocalNationService(SqliteOpfsDatabase database)
             cityId);
 
     private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
+
+    private static void ValidateCoordinates(decimal? latitude, decimal? longitude)
+    {
+        if (latitude.HasValue != longitude.HasValue)
+        {
+            throw new InvalidOperationException("Enter both latitude and longitude, or leave both blank.");
+        }
+
+        if (latitude is < -90 or > 90)
+        {
+            throw new InvalidOperationException("Latitude must be between -90 and 90.");
+        }
+
+        if (longitude is < -180 or > 180)
+        {
+            throw new InvalidOperationException("Longitude must be between -180 and 180.");
+        }
+    }
 
     private static void EnsureUpdated(int affected, string message)
     {

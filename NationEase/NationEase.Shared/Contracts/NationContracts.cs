@@ -35,7 +35,9 @@ public sealed record CityResponse(
     string StateAcronym,
     string Name,
     decimal Population,
-    DateOnly? FoundingDate);
+    DateOnly? FoundingDate,
+    decimal? Latitude,
+    decimal? Longitude);
 
 /// <summary>City fields required to create a city.</summary>
 public sealed record CreateCityRequest
@@ -50,6 +52,12 @@ public sealed record CreateCityRequest
     public required decimal Population { get; init; }
 
     public DateOnly? FoundingDate { get; init; }
+
+    [Range(typeof(decimal), "-90", "90")]
+    public decimal? Latitude { get; init; }
+
+    [Range(typeof(decimal), "-180", "180")]
+    public decimal? Longitude { get; init; }
 }
 
 /// <summary>City fields used to replace an existing city.</summary>
@@ -65,6 +73,12 @@ public sealed record UpdateCityRequest
     public required decimal Population { get; init; }
 
     public DateOnly? FoundingDate { get; init; }
+
+    [Range(typeof(decimal), "-90", "90")]
+    public decimal? Latitude { get; init; }
+
+    [Range(typeof(decimal), "-180", "180")]
+    public decimal? Longitude { get; init; }
 }
 
 /// <summary>A browser-local user account.</summary>

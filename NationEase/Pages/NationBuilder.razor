@@ -1,10 +1,11 @@
 @page "/nation-builder"
-
-@using NationEase.Contracts
+@using System.Globalization
 
 @inject LocalNationService Nation
 @inject LocalAuthenticationService Authentication
 @inject IJSRuntime JS
+
+<PageTitle>Nation Builder - NationBuilder</PageTitle>
 
 <h1>Nation Builder</h1>
 
@@ -13,76 +14,53 @@
     <div class="alert alert-danger" role="alert">@operationError</div>
 }
 
-<p>
-    Cities Selected:
-    @cities.Count
-</p>
-<p>
-    Total Population:
-    @cities.Sum(city => city.Population).ToString("N0")
-</p>
-<p>
-    Average Population:
-    @(cities.Count == 0 ? 0 : cities.Average(city => city.Population).ToString("N3"))
-</p>
-<p>
-    Largest City:
-    @cities.MaxBy(city => city.Population)?.Name
-</p>
-<p>
-    Smallest City:
-    @cities.MinBy(city => city.Population)?.Name
-</p>
-
-
-
-<div class="table-responsive" role="region" aria-label="Selected cities" tabindex="0">
-<table class="table">
-
-    <thead>
-
-        <tr>
-            <th scope="col"><span class="visually-hidden">Actions</span></th>
-            <th scope="col">Founded</th>
-            <th scope="col">City</th>
-            <th scope="col">Population</th>
-        </tr>
-
-    </thead>
-
-    <tbody>
-
-        @foreach(var city in cities.OrderByDescending(c => c.Population))
-        {
-            <tr data-city-id="@city.CityId">
-                <td>
-                    <button type="button"
-                            class="btn btn-danger"
-                            @onclick="() => RemoveCity(city.CityId)">
-                        Remove
-                    </button>
-                </td>
-                <td>@(city.FoundingDate?.ToString("yyyy/MM/dd") ?? "Unknown")</td>
-                <td>
-                    [@city.StateAcronym]
-                    @city.Name
-                </td>
-
-                <td>@city.Population.ToString("N0")</td>
-            </tr>
-        }
-
-    </tbody>
-
-</table>
-</div>
 <button type="button"
-        class="btn btn-warning"
+        class="btn btn-warning nation-clear-button"
         @onclick="ClearNation">
     Clear Nation
 </button>
 
-
+<div class="table-responsive nation-city-list" role="region" aria-label="Selected cities" tabindex="0">
+    <table class="table">
+        <colgroup>
+            <col class="nation-city-actions-column" />
+            <col />
+            <col class="nation-city-population-column" />
+        </colgroup>
+        <thead>
+            <tr>
+                <th scope="col">Actions</th>
+                <th scope="col">City</th>
+                <th scope="col" class="text-center">Population</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var city in cities
+                .OrderBy(city => city.StateAcronym, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(city => city.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                <tr data-city-id="@city.CityId">
+                    <td>
+                        <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                aria-label="Remove @city.Name from Nation"
+                                @onclick="() => RemoveCity(city.CityId)">
+                            Remove
+                        </button>
+                    </td>
+                    <td>[@city.StateAcronym] @city.Name</td>
+                    <td class="text-center">@city.Population.ToString("N0", CultureInfo.InvariantCulture)</td>
+                </tr>
+            }
+            @if (cities.Count == 0)
+            {
+                <tr>
+                    <td colspan="3">No cities have been added to your nation yet.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 @code {
     private List<CityResponse> cities = new();
     private int? cityIdToFocus;
@@ -104,7 +82,10 @@
         operationError = null;
         try
         {
-            var orderedCities = cities.OrderByDescending(city => city.Population).ToList();
+            var orderedCities = cities
+                .OrderBy(city => city.StateAcronym, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(city => city.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
             var removedCityIndex = orderedCities.FindIndex(city => city.CityId == cityId);
             cityIdToFocus = removedCityIndex > 0
                 ? orderedCities[removedCityIndex - 1].CityId

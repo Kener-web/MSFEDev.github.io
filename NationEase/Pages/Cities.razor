@@ -1,5 +1,6 @@
 @page "/cities"
 @using System.ComponentModel.DataAnnotations
+@using System.Globalization
 @inject LocalNationService Nation
 @inject LocalAuthenticationService Authentication
 @inject IJSRuntime JS
@@ -8,13 +9,9 @@
 
 <h1>Cities</h1>
 
-<EditForm Model="cityForm" OnValidSubmit="SaveCity" class="row g-2 mb-4">
+<EditForm Model="cityForm" OnValidSubmit="SaveCity" class="row g-2 mb-4 city-edit-form">
     <DataAnnotationsValidator />
     <div class="col-md-2">
-        <label for="city-founded" class="form-label">Founding date</label>
-        <InputDate id="city-founded" class="form-control" @bind-Value="cityForm.FoundingDate" />
-    </div>
-    <div class="col-md-3">
         <label for="city-state" class="form-label">State</label>
         <InputSelect id="city-state" class="form-select" @bind-Value="cityForm.StateId">
             <option value="0" disabled>Select State</option>
@@ -24,15 +21,27 @@
             }
         </InputSelect>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-2">
         <label for="city-name" class="form-label">City</label>
         <InputText id="city-name" class="form-control" @bind-Value="cityForm.Name" @oninput="CheckInput" />
+    </div>
+    <div class="col-md-2">
+        <label for="city-founded" class="form-label">Founding date</label>
+        <InputDate id="city-founded" class="form-control" @bind-Value="cityForm.FoundingDate" />
     </div>
     <div class="col-md-2">
         <label for="city-population" class="form-label">Population</label>
         <InputNumber id="city-population" class="form-control" @bind-Value="cityForm.Population" />
     </div>
-    <div class="col-md-2 d-flex flex-wrap align-items-end gap-2">
+    <div class="col-md-1">
+        <label for="city-latitude" class="form-label">Latitude</label>
+        <InputNumber id="city-latitude" class="form-control" @bind-Value="cityForm.Latitude" />
+    </div>
+    <div class="col-md-1">
+        <label for="city-longitude" class="form-label">Longitude</label>
+        <InputNumber id="city-longitude" class="form-control" @bind-Value="cityForm.Longitude" />
+    </div>
+    <div class="col-md-2 d-flex flex-wrap align-items-end justify-content-md-end gap-2">
         <button type="submit" class="btn btn-primary">@(editingCityId is null ? "Add City" : "Save changes")</button>
         @if (editingCityId is not null)
         {
@@ -49,39 +58,54 @@
     <div class="alert alert-danger" role="alert">@operationError</div>
 }
 
-<div class="table-responsive" role="region" aria-label="Cities list" tabindex="0">
+<div class="table-responsive cities-compact-list" role="region" aria-label="Cities list" tabindex="0">
     <table class="table">
+    <colgroup>
+        <col class="city-actions-column" />
+        <col class="city-name-column" />
+        <col class="city-founded-column" />
+        <col class="city-population-column" />
+        <col class="city-coordinate-column" />
+        <col class="city-coordinate-column" />
+    </colgroup>
     <thead>
         <tr>
-            <th scope="col"><span class="visually-hidden">Nation selection</span></th>
             <th scope="col">Actions</th>
-            <th scope="col">Founded</th>
             <th scope="col">City</th>
-            <th scope="col">Population</th>
+            <th scope="col">Founded</th>
+            <th scope="col" class="text-end">Population</th>
+            <th scope="col" class="text-end">Latitude</th>
+            <th scope="col" class="text-end">Longitude</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var city in cities.OrderBy(city => city.Population))
+        @foreach (var city in cities.OrderByDescending(city => city.Population))
         {
             var isAdded = selectedCityIds.Contains(city.CityId);
 
             <tr data-city-id="@city.CityId">
-                <td>
-                    <button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditCity(city)">Edit</button>
-                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCity(city.CityId)">Delete</button>
-                </td>
-                <td>
+                <td class="city-list-actions">
                     <button type="button"
-                            class="btn btn-primary"
-                            aria-disabled="@isAdded"
+                            class="btn btn-sm btn-outline-primary"
+                            aria-label="Edit @city.Name"
+                            @onclick="() => EditCity(city)">Edit</button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            aria-label="Delete @city.Name"
+                            @onclick="() => DeleteCity(city.CityId)">Delete</button>
+                    <button type="button"
+                            class="btn btn-sm btn-primary"
+                            disabled="@isAdded"
                             aria-label="@(isAdded ? $"Added {city.Name} to Nation" : $"Add {city.Name} to Nation")"
                             @onclick="() => AddCity(city)">
-                        @(isAdded ? "Added" : "Add to Nation")
+                        @(isAdded ? "Added" : "Add")
                     </button>
                 </td>
-                <td>@(city.FoundingDate?.ToString("yyyy/MM/dd") ?? "Unknown")</td>
-                <td>[@city.StateAcronym] @city.Name</td>
-                <td>@city.Population.ToString("N0")</td>
+                <td class="city-list-name">[@city.StateAcronym] @city.Name</td>
+                <td>@(city.FoundingDate?.ToString("yyyy/MM/dd", CultureInfo.InvariantCulture) ?? "Unknown")</td>
+                <td class="text-end">@city.Population.ToString("N0", CultureInfo.InvariantCulture)</td>
+                <td class="text-end">@FormatCoordinate(city.Latitude)</td>
+                <td class="text-end">@FormatCoordinate(city.Longitude)</td>
             </tr>
         }
     </tbody>
@@ -99,6 +123,9 @@
     private string? operationError;
     private string? inputSecurityWarning;
     private bool inputSecurityWarningDismissed;
+
+    private static string FormatCoordinate(decimal? coordinate) =>
+        coordinate?.ToString("F6", CultureInfo.InvariantCulture) ?? "—";
 
     protected override async Task OnInitializedAsync()
     {
@@ -130,7 +157,9 @@
                     StateId = cityForm.StateId,
                     Name = cityForm.Name,
                     Population = cityForm.Population,
-                    FoundingDate = cityForm.FoundingDate
+                    FoundingDate = cityForm.FoundingDate,
+                    Latitude = cityForm.Latitude,
+                    Longitude = cityForm.Longitude
                 });
             }
             else
@@ -140,7 +169,9 @@
                     StateId = cityForm.StateId,
                     Name = cityForm.Name,
                     Population = cityForm.Population,
-                    FoundingDate = cityForm.FoundingDate
+                    FoundingDate = cityForm.FoundingDate,
+                    Latitude = cityForm.Latitude,
+                    Longitude = cityForm.Longitude
                 });
             }
 
@@ -189,7 +220,9 @@
             StateId = city.StateId,
             Name = city.Name,
             Population = city.Population,
-            FoundingDate = city.FoundingDate
+            FoundingDate = city.FoundingDate,
+            Latitude = city.Latitude,
+            Longitude = city.Longitude
         };
         operationError = null;
     }
@@ -268,5 +301,11 @@
         public decimal Population { get; set; }
 
         public DateOnly? FoundingDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
+
+        [Range(typeof(decimal), "-90", "90")]
+        public decimal? Latitude { get; set; }
+
+        [Range(typeof(decimal), "-180", "180")]
+        public decimal? Longitude { get; set; }
     }
 }
